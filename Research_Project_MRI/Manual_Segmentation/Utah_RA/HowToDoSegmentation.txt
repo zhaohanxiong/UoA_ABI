@@ -1,0 +1,67 @@
+RA segmentation Instructions
+
+Step 0:	Setting up Folders
+
+
+Step 1: CavityDialation
+
+Make 2 labels in this order:
+
+Exterior (Default)
+Inside (Default)
+LA
+RA
+
+Use Utah data and threshold amira function to add the LAendoNoVeins and LAwall data to LA. then lock layer
+Use Erins data if available and threshold function to get RA (since LA is locked it will not overwrite)
+This gives initial RA region. Then remove and add the cavity manually using the brush and blow tools.
+For where there is an opening in the RA, add more cavity than what is needed. Then use the brush tool and interpolation
+on the excess material to get a gradual straight line. Then remove this from the RA selection.
+
+ctrl: 	negative shading
+alt:  	straight line
+ctrl i: interpolate active shading
+
+Points of note:
+Jump RA to tricuspid valve when the LA starts. 
+Remove all roofs and RA data with no cavity (but has wall).
+SVC and IVC must last longer than the other portions of the RA.
+Pericardium should not be counted in RA.
+
+
+
+After it is decent, save the mask in a folder named CavityMask and save this under the directory with all other data for the same scan.
+in CavityDialation.m select the range where the RA if open if using erins data. (~ line 89)
+run CavityDialation.m in matlab and put the output into amira to begin step 2.
+
+
+Step 2: ConnectSeptum
+
+Make 5 labels in this order:
+
+Exterior (Default)
+Inside (Default)
+Septum
+Remove
+Add
+RA
+LA
+
+First load the new output of CavityDialation. Use thresholding in amira to add values of 2 and 4 to the LA.
+Lock LA.
+Then use threshold to add 1 to RA (do not add 3 and do not lock yet).
+Go to brush load the original MRI data and select "select only current material"
+Go over all the excess material where the opening should be. Add this selection to the "Remove" label.
+Then lock Remove.
+Now add 3 to the RA label via thresholding using the cavity dialtion output data and then lock RA.
+use brush to go ovre regions where too much RA wall has been removed. add this to the "Add" label and lock after complete.
+Lastly select "Exterior" and in brush choose "select only current material".
+Cover the septum area (it will be easy because all the surrounding regions are locked and labelled)
+Add the selection to septum.
+
+Export as tif to a folder named "SeptumConnection" under the directory with the other data for this heart.
+run ConnectSeptum.m
+
+RA segmentation completed.
+
+Manually adjust as required.

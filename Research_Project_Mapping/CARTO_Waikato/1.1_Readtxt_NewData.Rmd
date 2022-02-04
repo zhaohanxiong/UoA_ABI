@@ -1,0 +1,43 @@
+
+# Setup and Helper Functions
+```{r}
+setwd("C:/Users/zxio506/Desktop")
+
+# load packages
+rm(list=ls())
+library("car")
+library("R.matlab")
+library("alphashape3d")
+```
+
+```{r}
+f = "2-LA_car.txt"
+
+# read the text file and simplify the vector for the
+txt = readLines(f)
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+
+scatter3d(x = dat$X5, y = dat$X6, z = dat$X7, point.col = "blue", surface=FALSE)
+```
+
+```{r}
+f = "path.xml"
+
+txt = readLines(f)
+txt = txt[grep('-LA" Index=',txt)[1]:length(txt)]
+txt = txt[grepl("CathOrientation",txt)]
+txt = sapply(txt, function(x)
+              substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+names(txt) = NULL
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt," "))), byrow=TRUE, ncol=3))
+
+scatter3d(x = dat$X1, y = dat$X2, z = dat$X3, point.col = "blue", surface=FALSE)
+```

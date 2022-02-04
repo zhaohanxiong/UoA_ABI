@@ -1,0 +1,70 @@
+
+# Setup and Helper Functions
+```{r}
+# load packages
+rm(list=ls())
+library("R.matlab")
+library("alphashape3d")
+
+repeat_conc_hull = function(path_coords,n_repeat) {
+  
+  # iterate through and apply concave hull 3 times
+  for (iter in 1:n_repeat) {
+
+    # compute concave hull of data
+    ashape = ashape3d(path_coords, alpha = 5, pert = TRUE) # plot(ashape)
+    
+    # convert concave hull mesh to pixel in an image volume
+    ashape_edge = ashape$edge[ashape$edge[,8]>=2,1:2]
+    vertices    = ashape$x
+    
+    # turn all edges into points
+    path_coords = c()
+    for (i in 1:nrow(ashape_edge)) {
+      
+      # define start and end point
+      e1 = vertices[ashape_edge[i,1],]
+      e2 = vertices[ashape_edge[i,2],]
+      n_points = max(abs(e1 - e2))+1
+      
+      # interpolate through the line
+      step = sapply(1:3,function(n) seq(e1[n],e2[n],length=n_points))
+      
+      # save the interpolated points as the new vertices of the concave hull
+      path_coords = rbind(path_coords,step)
+      
+    }
+    
+  }
+  
+  return(path_coords)
+  
+}
+```
+
+# Patient Data
+```{r}
+setwd("C:/Users/zxio506/Desktop/Melbourne Data")
+
+pat_files = c("Export_AT-08_08_2017-13-26-43","Export_PVI-11_27_2020-16-11-08")
+
+files = paste0(pat_files,"_projected_path.csv")
+
+for (f in 1:length(files)) {
+  
+  print(paste0(f," - ",files[f]))
+  
+  # load data and apply concave hull, 
+  path = as.matrix(read.csv(files[f],sep=","))
+  path = path[!is.na(path[,1]),]
+  path = repeat_conc_hull(path,n_repeat=3)
+  
+  # round and remove unique
+  path = round(path,0)
+
+  #ashape = ashape3d(path, alpha = 5, pert = TRUE);plot(ashape)
+  
+  writeMat(paste0(pat_files[f],"_projected_path.mat"),path_interpolated=path)
+
+}
+```

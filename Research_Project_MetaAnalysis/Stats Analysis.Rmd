@@ -1,0 +1,160 @@
+
+
+---
+title: "Meta Analysis - Additional Analysis"
+author: "Zhaohan Xiong"
+date: "2016-12-12"
+output: html_document
+---
+
+### Setting up data
+```{r}
+data = read.csv(sprintf("%s/data for meta analysis.csv", getwd()), header = TRUE, stringsAsFactors = FALSE)[1:31, 1:19]
+
+risk = data$Risk
+
+uncertainty = with(data, CI.UB - CI.LB)
+pubyear = data$PublicationYear
+studyyear = sapply(strsplit(data$YearOfStudy, "-"), function(x) (as.numeric(x[2]) + as.numeric(x[1]))/2)
+age = unname(sapply(data$MeanAge.sd., function(x) as.numeric(substring(x, 1, unlist(gregexpr("\\(", x)) - 1))))
+followup = data$MeanFollowUp
+adjustno = unname(sapply(data$VariablesAdjustedFor, function(x) length(unlist(strsplit(x, " ")))))
+```
+
+### Plotting risk against all variables
+```{r, fig.width = 15, fig.height = 10}
+plot.new()
+par(mfrow = c(2,3), mar = rep(4,4), oma = c(2,2,4,2), cex.lab = 1.5)
+
+plot(uncertainty, risk, main = "Risk vs Uncertainty", cex = 2)
+model = lm(risk ~ poly(uncertainty, 3, raw = TRUE))
+xx = seq(0, 15, by = 1)
+predicted = predict(model, data.frame(uncertainty = xx))
+lines(xx, predicted, lwd = 3)
+
+temp_pubyear = pubyear[studyyear > 1980]
+temp_risk = risk[studyyear > 1980]
+plot(temp_pubyear, temp_risk, main = "Risk vs Publication year", cex = 2)
+model = lm(temp_risk ~ poly(as.numeric(temp_pubyear), 1, raw = TRUE))
+xx = seq(1980, 2016, by = 1)
+predicted = predict(model, data.frame(temp_pubyear = xx))
+lines(xx, predicted, lwd = 3)
+
+temp_studyyear = studyyear[studyyear > 1980]
+temp_risk = risk[studyyear > 1980]
+plot(xlim = c(1980, 2016), temp_studyyear, temp_risk, main = "Risk vs Study year", cex = 2)
+model = lm(temp_risk ~ poly(temp_studyyear, 3, raw = TRUE))
+xx = seq(1980, 2016, by = 1)
+predicted = predict(model, data.frame(temp_studyyear = xx))
+lines(xx, predicted, lwd = 3)
+
+plot(age, risk, main = "Risk vs Age", cex = 2)
+model = lm(risk ~ poly(age, 1, raw = TRUE))
+xx = seq(30, 80, by = 1)
+predicted = predict(model, data.frame(age = xx))
+lines(xx, predicted, lwd = 3)
+
+plot(followup, risk, main = "Risk vs Mean follow up year", cex = 2)
+model = lm(risk ~ poly(followup, 1, raw = TRUE))
+xx = seq(0, 50, by = 1)
+predicted = predict(model, data.frame(followup = xx))
+lines(xx, predicted, lwd = 3)
+
+plot(adjustno, risk, main = "Risk vs Number of adjustment factors", cex = 2)
+model = lm(risk ~ poly(adjustno, 1, raw = TRUE))
+xx = seq(0, 15, by = 1)
+predicted = predict(model, data.frame(adjustno = xx))
+lines(xx, predicted, lwd = 3)
+
+title(main = "Risk factor relations", outer = TRUE, cex.main = 2)
+```
+
+### Comparing linearity
+```{r, fig.width = 10, fig.height = 10}
+plot.new()
+# top left: checks for homogeneity of the variance and the linear relation
+# top right: checks for normal distibution
+# bottom left: checks for variation of top left
+# bottom right: 
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk ~ uncertainty)
+plot(temp)
+summary(temp)
+cor.test(risk, uncertainty, method = "pearson")
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk[pubyear > 1980] ~ pubyear[pubyear > 1980])
+plot(temp)
+summary(temp)
+cor.test(risk, pubyear, method = "pearson")
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk ~ studyyear)
+plot(temp)
+summary(temp)
+cor.test(risk, studyyear, method = "pearson")
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk ~ age)
+plot(temp)
+summary(temp)
+cor.test(risk, age, method = "pearson")
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk ~ followup)
+plot(temp)
+summary(temp)
+cor.test(risk, followup, method = "pearson")
+
+par(mfrow = c(2,2), oma = c(2,2,4,2))
+temp = lm(risk ~ adjustno)
+plot(temp)
+summary(temp)
+cor.test(risk, adjustno, method = "pearson")
+```
+
+### Comparing country of study
+```{r}
+data$location = factor(data$Continent, ordered = FALSE)
+data$StudyType = factor(data$StudyType)
+aggregate(data$Risk, by = list(data$location), FUN = mean)
+aggregate(data$Risk, by = list(data$location, data$StudyType), FUN = mean)
+
+temp = aov(data$Risk ~ data$location + data$StudyType)
+TukeyHSD(x = temp, 'data$location', conf.level=0.95)
+
+
+
+
+
+library(metafor)
+
+
+dataEur = data[data$Continent == "Eur", ]
+dataEur$yi = log(dataEur$Risk)
+dataEur$vi = (with(dataEur, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataEur,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+print("----- Europe -----")
+pred
+
+
+dataAme = data[data$Continent == "Ame", ]
+dataAme$yi = log(dataAme$Risk)
+dataAme$vi = (with(dataAme, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAme,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+print("----- America -----")
+pred
+
+
+dataAsi = data[data$Continent == "Asi", ]
+dataAsi$yi = log(dataAsi$Risk)
+dataAsi$vi = (with(dataAsi, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAsi,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+print("----- Asia -----")
+pred
+```
+

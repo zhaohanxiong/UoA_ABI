@@ -1,0 +1,48 @@
+PublicationYear,Study,Title,CountryOfStudy,Continent,YearOfStudy,StudyType,Risk,RatioType,CI.LB,CI.UB,VariablesAdjustedFor,PopulationSize,MeanAge(sd),RiskMinAdj,MinCI.LB,MinCI.UB,Incident(%),MeanFollowUp
+1982,Kannel et al (Female), Epidemiologic features of chronic atrial fibrillation: the Framingham study. ,USA,Ame,1948-1952,Cohort,2.8,RR,2.2,3.4,age,2866,50.1(6),3,,,1.9,22
+1982,Kannel et al (Male), Epidemiologic features of chronic atrial fibrillation: the Framingham study. ,USA,Ame,1948-1952,Cohort,2.3,RR,1.8,2.8,age,2325,47.7(8),2.3,,,1.9,22
+1995,Krahn et al (Male),The natural history of AF incidence risk facts and prognosis in the manitoba follow up study,Canada,Ame,1948-1992,Cohort,1.82,HR,1.26,2.64,age,3983,72(NA),1.82,1.26,2.64,7.5,44
+1998,Kannel et al (Female)," Prevalence, incidence, prognosis, and predisposing conditions for atrialfibrillation: population-based estimates. ",USA,Ame,1968-1970,Case-Control,1.6,OR,1.1,2.2,age sex Hyp CHD HF VHD,2641,66.9(NA),2.1,,,,
+1998,Kannel et al (Male)," Prevalence, incidence, prognosis, and predisposing conditions for atrialfibrillation: population-based estimates. ",USA,Ame,1968-1970,Case-Control,1.4,OR,1,2,age sex Hyp CHD HF VHD,2090,66(NA),1.7,,,,
+2005,Frost et al (Female),Overweight and Obesity as Risk Factors for Atrial,Denmark,Eur,1993-2001,Cohort,2.67,HR,0.66,10.9,age BMI height smoking alcohol Hyp SBP IHD CHF VHD,25107,52.7(6.5),2.67,0.66,10.9,1.2,5.7
+2005,Frost et al (Male),Overweight and Obesity as Risk Factors for Atrial,Denmark,Eur,1993-2001,Cohort,0.39,HR,0.09,1.65,age BMI height smoking alcohol Hyp SBP IHD CHF VHD,22482,56(4.3),0.39,0.09,1.65,1.2,5.7
+2005,Movahed et al," Diabetes mellitus is a strong, independent risk for atrial fibrillation andflutter in addition to other cardiovascular disease. ",USA,Ame,1990-2000,Case-Control,2.13,OR,2.1,2.16,age sex CHF CAD LVH flutter,845748,65.1(12.2),2.13,2.1,2.16,,
+2008,Johansen et al, Prevalence of abnormal glucose metabolism in atrial fibrillation: a case controlstudy in 75-year old subjects. ,Norway,Eur,2005-2005,Case-Control,3.86,OR,1.01,16.25,,154,75(0),3.86,1.01,16.25,,
+2008,Watanabe et al, Metabolic syndrome and risk of development of atrial fibrillation: the Niigatapreventive medicine study. ,USA,Ame,1996-1998,Cohort,1.44,HR,1.09,1.9,age sex ,2849,59.2(11),1.44,1.09,1.9,9.3,4.5
+2008,Aksnes et al, Impact of new-onset diabetes mellitus on development of atrial fibrillation andheart failure in high-risk hypertension,USA/Germany/Italy,Ame,1997-2004,Cohort,1.38,HR,1.05,1.8,age CHD LVH treatement BMI BP rate pottasium,13760,67(8.1),1.49,1.14,1.94,5.1,4.2
+2009,Nichols et al (Female), Independent contribution of diabetes to increased prevalence and incidence ofatrial fibrillation. ,USA,Ame,1999-2004,Cohort,1.26,HR,1.08,1.46,age sex race smoking SBP IHD VHD Hyp HF,16955,58.4(11.5),1.26,1.08,1.46,NA,7.2
+2009,Nichols et al (Male), Independent contribution of diabetes to increased prevalence and incidence ofatrial fibrillation. ,USA,Ame,1999-2004,Cohort,1.09,HR,0.96,1.24,age sex race smoking SBP IHD VHD Hyp HF,17789,58.4(11.5),1.09,0.96,1.24,NA,7.2
+2009,Rosengren et al (Male),Big men and atrial fibrillation effects of body size and weight gain on risk of atrial fibrillation in men.,Sweden,Eur,1970-1973,Cohort,1.49,HR,0.92,2.41,age,6903,51.5(2.3),1.49,0.92,2.41,18.2,34.3
+2010,Dublin et al," Diabetes mellitus, glycemic control, and risk of atrial fibrillation. ",USA,Ame,2001-2004,Case-Control,1.45,OR,1.16,1.81,age sex Hyp BMI year race smokinh SBP history cholesterol,3613,70.3(4.7),1.4,1.15,1.71,,
+2010,Smith et al (Female)," Atrial fibrillation in the Malmo Diet and Cancer study: a study of occurrence,risk factors and diagnostic validity. ",Sweden,Eur,1991-1996,Cohort,1.67,HR,1.15,2.43,age,12118,57.3(7.9),1.67,1.15,2.43,4.7,11.2
+2010,Smith et al (Male)," Atrial fibrillation in the Malmo Diet and Cancer study: a study of occurrence,risk factors and diagnostic validity. ",Sweden,Eur,1991-1996,Cohort,1.39,HR,1.02,1.9,age,18323,59.1(7),1.39,1.02,1.9,4.7,11.2
+2012,Fontes et al, Insulin resistance and atrial fibrillatio,USA,Ame,1991-2001,Cohort,1.03,HR,0.72,1.46,age sex SBP Hyp HF BMI,3023,59.2(6.9),1.27,0.92,1.76,9.3,10
+2012,Huxley et al," Type 2 diabetes, glucose homeostasis and incident atrial fibrillation: theAtherosclerosis Risk in Communities study. ",USA,Ame,1990-1992,Cohort,1.09,HR,0.94,1.27,age sex race CHD FSG smoking HF SBP Hyp BMI,7188,57(5.7),1.39,1.21,1.6,,14.5
+2012,Schoen et al (Female), Type 2 diabetes mellitus and risk of incident atrial fibrillation in women. ,USA,Ame,2003-2011,Cohort,1.37,HR,1.03,1.83,age sex CVD IHD BMI Hyp,34720,52.9(3.1),1.95,1.49,2.56,3.1,16.4
+2013,Perez et al (Female), Risk factors for atrial fibrillation and their population burden inpostmenopausal women: the Women's Health Initiative Observational Study. ,USA,Ame,1994-1998,Cohort,1.55,HR,1.42,1.7,age sex race PAD Hyp HF CHD BMI smoking alcohol treatment Hyperlipidaemia ,81892,63.4(7.3),2.08,1.91,2.27,1,9.8
+2014,Johnson et al (Female), Low fasting plasma insulin is associated atrial fibrillation in men from a cohortstudy--the Malmo preventive project. ,Sweden,Eur,1974-1992,Cohort,1.21,HR,0.66,2.22,age sex height BMI SBP smoking,1014,48.3(6.9),1.24,0.68,2.29,13.91,30.2
+2014,Johnson et al (Male), Low fasting plasma insulin is associated atrial fibrillation in men from a cohortstudy--the Malmo preventive project. ,Sweden,Eur,1974-1992,Cohort,0.91,HR,0.76,1.08,age sex height BMI SBP smoking,6052,47.2(2.4),0.9,0.75,1.08,13.91,30.2
+2015,Staszewsky et al, Diabetes mellitus as risk factor for atrial fibrillation hospitalization:Incidence and outcomes over nine years in a region of Northern Italy. ,Italy,Eur,2000-2010,Cohort,1.32,HR,1.3,1.34,age sex medications Hyp HF HA,825330,65.6(13.8),1.32,1.3,1.34,7,9
+2016,Alves-Cabratosa et al, Diabetes and new-onset atrial fibrillation in a hypertensive population. ,Spain,Eur,2006-2011,Cohort,1.11,HR,1.06,1.16,age BP LDLC,262892,67.0 (9.5),1.26,1.21,1.32,4.5,4.3
+2016,Mendez-Bailon et al (Female), Impact of type 2 diabetes mellitus in hospitalizations for atrial fibrillation inSpain,Spain,Eur,2004-2016,Case-Control,4.27,IRR,4.21,4.33,age year,111688,74(NA),4.27,4.21,4.33,,
+2016,Mendez-Bailon et al (Male), Impact of type 2 diabetes mellitus in hospitalizations for atrial fibrillation inSpain,Spain,Eur,2004-2016,Case-Control,3.24,IRR,3.2,3.3,age year,102769,74(NA),3.24,3.2,3.3,,
+2016,Sun et al, Diabetes mellitus is an independent risk factor for atrial fibrillation in ageneral Chinese population. ,China,Asi,2013-2013,Case-Control,2.33,OR,1.2,4.54,age sex BMI SBP DBP cholesterol trigylceride LDLC HDLC smoking drinking MI LLVEF LVH history,11341,53.8(10.6),2.31,1.28,4.18,,
+2016,Pallisgaard et al (Female), Risk of atrial fibrillation in diabetes mellitus: A nationwide cohort study. ,Denmark,Eur,1996-2012,Cohort,1.16,IRR,1.14,1.18,age sex year Hyp IHD HF VHD ,2570908,36.4(24.3),1.16,1.14,1.18,NA,NA
+2016,Pallisgaard et al (Male), Risk of atrial fibrillation in diabetes mellitus: A nationwide cohort study. ,Denmark,Eur,1996-2012,Cohort,1.19,IRR,1.17,1.2,age sex year Hyp IHD HF VHD ,2510179,36.4(24.3),1.19,1.17,1.2,,
+2016,Tomlin et al,"Atrial fibrillation in New Zealand primary care: prevalence, risk factors for stroke and the management of thromboembolic risk",,,,,,,,,,,,,,,,
+,Sun et al, The link between diabetes and atrial fibrillation,,,,,,,,,,,,,,,,
+,Huxley et al, Meta-analysis of cohort and case-control studies of type 2 diabetes mellitus andrisk of atrial fibrillation. ,,,,,,,,,,,,,,,,
+,Grundvold et al," Body weight and risk of atrial fibrillation in 7,169 patients with newlydiagnosed type 2 diabetes; an observational study. ",,,,,,,,,,,,,,,,
+,Lee et al, Evaluation of the association between diabetic retinopathy and the incidence ofatrial fibrillation: A nationwide population-based study. ,,,,,,,,,,,,,,,,
+,Fatemi et al, Impact of intensive glycemic control on the incidence of atrial fibrillation andassociated cardiovascular outcomes in patients with type 2 diabetes mellitu,,,,,,,,,,,,,,,,
+,Thacker et al," Association of body mass index, diabetes, hypertension, and blood pressure levelswith risk of permanent atrial fibrillation. ",,,,,,,,,,,,,,,,
+,Thijs et al, Predictors for atrial fibrillation detection after cryptogenic stroke: Resultsfrom CRYSTAL AF. ,,,,,,,,,,,,,,,,
+,Ruigómez et al,Incidence of chronic AF in general practice and its treatment pattern,,,,,,,,,,,,,,,,
+,Benjamin et al, Independent risk factors for atrial fibrillation in a population-based cohort.The Framingham Heart Study. ,,,,,,,,,,,,,,,,
+,Sun et al , Prevalence of atrial fibrillation and its risk factors in rural China: across-sectional study. ,,,,,,,,,,,,,,,,
+,Benjamin et al, Impact of atrial fibrillation on the risk of death: the Framingham Heart Study. ,,,,,,,,,,,,,,,,
+,, Risk of atrial fibrillation in people with type 1 diabetes compared with matchedcontrols from the general population: a prospective case-control study. ,,,,,,,,,,,,,,,,
+,, Women with atrial fibrillation and type 2 diabetes have a higher incidence ofhospitalization and undergo ablation or pacemaker implantation less frequentlythan men. ,,,,,,,,,,,,,,,,
+,, Incidence and Risk Factors for Atrial Fibrillation in Korea: the National HealthInsurance Service Databas,,,,,,,,,,,,,,,,
+,,Risk factors for atrial fibrillation in type 2 diabet,,,,,,,,,,,,,,,,
+,,The etiology and associated risk factors in a sample of 300 patients with atr,,,,,,,,,,,,,,,,

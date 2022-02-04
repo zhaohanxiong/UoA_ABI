@@ -1,0 +1,1291 @@
+---
+title: "Meta Analysis All Figures"
+author: "Zhaohan Xiong"
+date: "2017-09-01"
+output: html_document
+---
+
+# Figure 1 - Machine Learning Results: year of publication and cluster similarity
+```{r warning=FALSE, fig.width = 10}
+pdf("Tables & Figures/Figure 1B.pdf", width = 15, height = 10)
+
+years = c(   1  ,0,0,0,0,0,0,0,0,0,0,  3  , 0, 4,    1,    2,    1  ,  1  ,0,  1  ,  1  ,  1,    1  ,  4  ,  1 ,0,   2   , 1 ,   1   , 1   , 4 ,   2  ,  2   , 6 ,   2   , 6 ,   6   ,11   ,17 ,  17  , 16  , 24  , 29  , 26 ,  32 ,  33,   44  , 51 ,58  , 77,   84  ,105 , 112 , 125  ,139,  161  ,181 , 179 , 208 , 228 , 321,  332 , 397 , 382  ,446 , 287 )
+
+names(years) = 1952:2017
+
+barplot(years,ylim=c(0,500), xlab = "Year Of Publication", ylab = "Number Of Papers", main = " Number Of Research Papers: May 1952 - Sep 2017", col = "grey75", las = 2)
+
+dev.off()
+```
+
+```{r warning=FALSE}
+pdf("Tables & Figures/Figure 1C.pdf", width = 6, height = 6)
+
+### % Similarity - most likely vs all others - t test
+col1 = c(0.555555535436 ,0.52280488, 0.6975089 ,0.6698113, 0.7386364 ,0.8194444 ,0.5764706 ,0.6597633 ,0.7345455, 0.5961538, 0.6405694, 0.6390533 ,0.7206897, 0.6328358, 0.6988848 ,0.6811594, 0.6326531, 0.7157534, 0.66352434220, 0.5894737 ,0.6480938, 0.6758410, 0.6143617, 0.630056878 ,0.5825826, 0.6017699 ,0.3996627 ,0.6696697 ,0.7539062, 0.6645234367, 0.693634534027, 0.6518987 ,0.662342396697, 0.7328767, 0.6702509, 0.6548673, 0.7428571, 0.86566265, 0.5430862, 0.7342657, 0.7205387, 0.4622234824, 0.6292348343, 0.6067416, 0.6863354, 0.7413724393, 0.6827795, 0.6934866, 0.6783439, 0.6468927)
+col1 = col1 - 0.075
+
+col2 = c(0.09734539975, 0.09756883, 0.10608255, 0.09922345284, 0.094361610 ,0.19798357 ,0.09187509 ,0.10246786, 0.12879904 ,0.09530833 ,0.16132950 ,0.10614302, 0.10753453661, 0.11382536 ,0.10302793 ,0.09562847, 0.10641317, 0.12916135 ,0.12104393 ,0.09954593, 0.09997046 ,0.08883542801 ,0.11668345394 ,0.09746043 ,0.10629645, 0.12423455002, 0.11697266 ,0.09399830, 0.12627223, 0.10664415, 0.09655486 ,0.11213590 ,0.10061657, 0.10986724299, 0.13588360, 0.10903458116 ,0.10377378 ,0.11328703, 0.13145206, 0.11638481, 0.11195504, 0.08211833, 0.10873605 ,0.11047242, 0.1102461264 ,0.10098215 ,0.10439239, 0.12691076 ,0.11503102, 0.09464842)
+col2 = col2 + 0.025
+
+max_vs_other = cbind(col1, col2)
+colnames(max_vs_other) = c("Most Similar Cluster", "All Others Clusters")
+# To get the p value for the t-test of the most likely and all the others
+t.test(max_vs_other[,1], max_vs_other[,2])
+
+par(lwd = 3)
+barplot( colMeans(max_vs_other*100),ylim = c(0,100), main = "Comparison Of Cluster 5 vs All other Clusters", ylab = "Percentage Similarity With Training Set", border = TRUE)
+text(x = 1.3, y = 85, "Welch t-test:\np-value < 2.2e-16\nCI: [0.42,0.47]", cex = 1.5)
+segments(0.7, max(colMeans(max_vs_other*100)[1]) + 0.25, 0.7, max(max_vs_other[,1]*100), lwd = 5)
+segments(0.55,max(max_vs_other[,1]*100), 0.85, max(max_vs_other[,1]*100), lwd = 5)
+segments(1.9, max(colMeans(max_vs_other*100)[2]) + 0.25, 1.9, max(max_vs_other[,2]*100), lwd = 5)
+segments(1.75, max(max_vs_other[,2]*100), 2.05, max(max_vs_other[,2]*100), lwd = 5)
+
+dev.off()
+```
+
+
+### Meta Analysis Initialization
+```{r warning=FALSE}
+library(metafor)
+rm(list = ls())
+
+filename = "FINAL DATA FOR META-ANALYSIS.csv"
+data = data.frame(read.csv(sprintf("%s/%s", getwd(), filename), stringsAsFactors =  FALSE, header = TRUE))
+data = data[, 1:20]
+
+data$yi = log(data$Risk)
+data$vi = (with(data, (log(CI.UB) - log(Risk))/1.96))^2
+data$Study = sprintf("%s (%s)", data$Study, data$PublicationYear)
+res = rma(yi, vi, data = data,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+
+data$AdjustmentLevel = ifelse(unlist(lapply(strsplit(data$VariablesAdjustedFor, " "), function(x) length(x))) > 2, "High", "Low")
+data$AdjustmentLevel = factor(data$AdjustmentLevel, levels = c("High", "Low"))
+data$StudyType = factor(data$StudyType, levels = c("Cohort", "Case-Control"))
+
+plot_forest = function(res, data, xlim_min, xlim_max, ylim_min, ylim_max, weightlab, title, weightlabeladj, textsize, mar_size, labcex = 1, xlabcex = 0, summary_lab_pos=2.25){
+  par(mar = rep(mar_size, 4), font = 1)
+  forest(res, slab = data$Study,
+         xlim = c(xlim_min, xlim_max), ylim = c(ylim_min, ylim_max), at = log(c(0.33, 0.5, 1, 2, 3, 4, 5)), atransf = exp,
+         xlab = "Relative Risk",
+         ilab.xpos = c(-3, 5), cex.lab = textsize + xlabcex, cex = textsize)
+  text(weightlab, length(weights(res)):1 - weightlabeladj, sprintf("%0.2f%%\n", weights(res)), pos = 4, cex = textsize)
+  heading_heights = ylim_max - 1.5
+  text(weightlab, heading_heights, "%Weight", pos = 4, cex = textsize + 0.25)
+  text(xlim_min, heading_heights, "Author(s) and Year", pos = 4, cex = textsize + 0.25)
+  text(xlim_max, heading_heights, "RR [95% CI]", pos = 2, cex = textsize + 0.25)
+  mtext("Diabetes Decreases AF", side = 1, at = -2.5, cex = labcex)
+  mtext("Diabetes Increases AF", side = 1, at = 2.5, cex = labcex)
+  title(main = sprintf("Forest Plot (%s)", title), cex.main = textsize + 0.75)
+  
+  text(xlim_min+summary_lab_pos,-1,sprintf("(I-squared = %0.1f%%, p = %0.3f)",res$I2,round(res$pval,3)), cex = textsize)
+}
+```
+
+
+
+# Figure 2
+```{r warning=FALSE}
+pdf("Tables & Figures/Figure 2.pdf", width = 12.5, height = 15)
+
+res_StudyType = rma(yi, vi, data = data,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+textsize = 1
+par(oma = c(2,2,2,2), font = 1)
+
+sp = 2
+forest(res_StudyType, slab = data$Study,
+       xlim = c(-4, 5), ylim = c(-1, nrow(data) + 8), at = log(c(0.33, 0.5, 1, 2, 3, 4, 5)), atransf = exp,
+       xlab = "Relative Risk", order = order(data$StudyType, decreasing = TRUE), 
+       rows = c(sp:(sp + sum(data$StudyType == "Case-Control") - 1), (sp + sum(data$StudyType == "Case-Control") + 3):(sp + nrow(data) + 2)),
+       ilab.xpos = c(-3, 5), cex.lab = textsize, cex = textsize)
+
+# Sub headings
+text(-4, c((sp + sum(data$StudyType == "Case-Control")), (sp + nrow(data) + 3))+0.25, pos = 4, c("Case-Control Studies", "Cohort/Randomized Studies"), font = 2, cex = 1.25)
+
+# Fit individual models
+res_cohort = rma(yi, vi, data = data[which(data$StudyType == "Cohort"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+res_caseControl = rma(yi, vi, data = data[which(data$StudyType == "Case-Control"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+# Add in the subgroup summaries
+addpoly(res_caseControl, row = sp - 1, cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, sp - 1, pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res)[which(data$StudyType == "Case-Control")])))
+text(-2.25 , sp - 1, pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_cohort$I2,round(res_cohort$pval,3)), cex = textsize)
+
+addpoly(res_cohort, row = (sp + sum(data$StudyType == "Case-Control") + 2), cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, (sp + sum(data$StudyType == "Case-Control") + 2), pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res)[which(data$StudyType == "Cohort")])))
+text(-2.25  , (sp + sum(data$StudyType == "Case-Control") + 2), pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_caseControl$I2,round(res_caseControl$pval,3)), cex = textsize)
+
+# Other text
+text(1.75, c(sp:(sp + sum(data$StudyType == "Case-Control") - 1), (sp + sum(data$StudyType == "Case-Control") + 3):(sp + nrow(data) + 2)) - 0.5, 
+     sprintf("%0.2f%%\n", 
+                                         c(weights(res)[which(data$StudyType == "Case-Control")],
+                                           weights(res)[which(data$StudyType == "Cohort")])),
+                                                         pos = 4, cex = textsize)
+heading_heights = nrow(data) + 8 - 1
+text(1.75, heading_heights, "% Weight", pos = 4, cex = textsize + 0.25)
+text(-4, heading_heights, "Author(s) and Year", pos = 4, cex = textsize + 0.25)
+text(5, heading_heights, "RR [95% CI]", pos = 2, cex = textsize + 0.25)
+mtext("Diabetes Decreases AF", side = 1, at = -1.75, cex = 0.75)
+mtext("Diabetes Increases AF", side = 1, at = 2.2, cex = 0.75)
+title(main = "Forest Plot (Cohort vs Case Control)", cex.main = textsize + 0.75)
+text(-4+2,-1,sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_StudyType$I2,round(res_StudyType$pval,3)), cex = textsize)
+
+dev.off()
+```
+
+
+
+# Figure 3 - Different Confounding Diseases Adjusted For
+```{r warning=FALSE}
+hyp = grepl("Hyp|BP ", data$VariablesAdjustedFor)
+BMI = grepl("BMI", data$VariablesAdjustedFor)
+heart_disease = grepl("CHD|VHD|HF| MI |CVD|IHD|PAD", data$VariablesAdjustedFor)
+
+#####################################################################################################################################
+pdf("Tables & Figures/Figure 3A.pdf", width = 17, height = 12.5)
+
+# Hypertension
+data_temp = data[hyp, ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+cat(sprintf("----- Hypertension: -----"));res;pred
+plot_forest(res = res, 
+            data = data_temp, 
+            title = "Hypertension Adjusted", textsize = 2, mar_size = 5,
+            xlim_min = -4, xlim_max = 5, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.75, labcex = 1.5, xlabcex = -0.5, summary_lab_pos=2.25)
+
+dev.off()
+#####################################################################################################################################
+
+#####################################################################################################################################
+pdf("Tables & Figures/Figure 3B.pdf", width = 17, height = 12.5)
+
+# Heart Disease
+data_temp = data[heart_disease, ]
+data_temp = data_temp[nrow(data_temp):1, ]
+res = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+cat(sprintf("----- Heart Diseases: -----"));res;pred
+plot_forest(res = res, 
+            data = data_temp, 
+            title = "Heart Disease Adjusted", textsize = 2, mar_size = 5,
+            xlim_min = -4, xlim_max = 5, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.75, labcex = 1.5, xlabcex = -0.5, summary_lab_pos=2.25)
+
+dev.off()
+#####################################################################################################################################
+
+#####################################################################################################################################
+pdf("Tables & Figures/Figure 3C.pdf", width = 17, height = 10)
+
+# BMI
+data_temp = data[BMI, ]
+data_temp = data_temp[nrow(data_temp):1, ]
+res = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+cat(sprintf("----- BMI: -----"));res;pred
+plot_forest(res = res, 
+            data = data_temp, 
+            title = "BMI Adjusted", textsize = 2, mar_size = 5,
+            xlim_min = -4, xlim_max = 5, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.75, labcex = 1.5, xlabcex = -0.5, summary_lab_pos=2.25)
+
+dev.off()
+#####################################################################################################################################
+
+#####################################################################################################################################
+pdf("Tables & Figures/Figure 3D.pdf", width = 17, height = 8)
+
+# Hypeternsion + BMI + Cardiovascular disease
+data_temp = data[(hyp&BMI&heart_disease), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+res = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+cat(sprintf("----- Hypertension + BMI + Heart Disease: -----"));res;pred
+
+plot_forest(res = res, 
+            data = data_temp, 
+            title = "Hypertension + BMI\n+ Heart Disease Adjusted", textsize = 2, mar_size = 5,
+            xlim_min = -4, xlim_max = 4.5, ylim_min = -1.5, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.35, labcex = 1.5, summary_lab_pos=2.15)
+
+dev.off()
+#####################################################################################################################################
+```
+
+
+
+# Figure 4 - AF subtypes
+```{r warning=FALSE}
+pdf("Tables & Figures/Figure 4.pdf", width = 9, height = 9)
+
+Get_Prediction = function(x){predict(rma(yi,vi,data=x,weighted=TRUE,control=list(stepadj=0.5),method="DL"),transf=exp,digits=3)}
+
+all_temp = data[!grepl("Thacker et al|Ruigómez et al",data$Study),]
+all_temp = all_temp[all_temp$AdjustmentLevel=="High",]
+AF_all        = round(c(Get_Prediction(all_temp)$pred,Get_Prediction(all_temp)$ci.lb,Get_Prediction(all_temp)$ci.ub,nrow(all_temp)),2)
+Paroxysmal_AF = c(1.35,1.03,1.78,1)
+Persistent_AF = c(1.27,0.93,1.77,3)
+Permanent_AF  = c(1.32,0.92,1.91,2)
+
+print("Population Size")
+print(sum(all_temp$PopulationSize)) # all
+print(sum(data[grepl("Dublin",data$Study),]$PopulationSize)) # Paroxysmal_AF
+print(sum(data[grepl("Aksnes|Ruigómez|Dublin",data$Study),]$PopulationSize)) # Persistent_AF
+print(sum(data[grepl("Thacker|Dublin",data$Study),]$PopulationSize)) # Permanent_AF
+
+plot(0,0,type="n",xlim=c(0,12),ylim=c(-0.5,2),main="Risk Factors for All AF Subtypes",xlab="",ylab="Relative Risk (RR)",xaxt ="n",bty="n",font=2)
+abline(0,0)
+
+mid = 2
+rect(mid-1,0,mid+1,AF_all[1],lwd=3)
+lines(c(mid,mid),AF_all[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(AF_all[2],AF_all[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(AF_all[3],AF_all[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,AF_all[2]-0.05,AF_all[1]+0.05,AF_all[3]+0.05),
+  c("All Types",c(as.character(AF_all[2]),paste0("RR  ",as.character(AF_all[1]))),as.character(AF_all[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",AF_all[4]),font=2,cex=1.5)
+
+
+mid = 5
+rect(mid-1,0,mid+1,Paroxysmal_AF[1],lwd=3)
+lines(c(mid,mid),Paroxysmal_AF[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Paroxysmal_AF[2],Paroxysmal_AF[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Paroxysmal_AF[3],Paroxysmal_AF[3]),lwd=3)
+
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,Paroxysmal_AF[2]-0.05,Paroxysmal_AF[1]+0.05,Paroxysmal_AF[3]+0.05),
+  c("Paroxysmal",c(as.character(Paroxysmal_AF[2]),paste0("RR  ",as.character(Paroxysmal_AF[1]))),as.character(Paroxysmal_AF[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",Paroxysmal_AF[4]),font=2,cex=1.5)
+
+
+mid = 8
+rect(mid-1,0,mid+1,Persistent_AF[1],lwd=3)
+lines(c(mid,mid),Persistent_AF[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Persistent_AF[2],Persistent_AF[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Persistent_AF[3],Persistent_AF[3]),lwd=3)
+
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,Persistent_AF[2]-0.05,Persistent_AF[1]+0.05,Persistent_AF[3]+0.05),
+  c("Persistent",c(as.character(Persistent_AF[2]),paste0("RR  ",as.character(Persistent_AF[1]))),as.character(Persistent_AF[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",Persistent_AF[4]),font=2,cex=1.5)
+
+
+mid = 11
+rect(mid-1,0,mid+1,Permanent_AF[1],lwd=3)
+lines(c(mid,mid),Permanent_AF[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Permanent_AF[2],Permanent_AF[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Permanent_AF[3],Permanent_AF[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,Permanent_AF[2]-0.05,Permanent_AF[1]+0.05,Permanent_AF[3]+0.05),
+  c("Permanent",c(as.character(Permanent_AF[2]),paste0("RR  ",as.character(Permanent_AF[1]))),as.character(Permanent_AF[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",Permanent_AF[4]),font=2,cex=1.5)
+
+
+sprintf("AF all --- RR: %g, CI: [%g ,%g]. N = %g",AF_all[1],AF_all[2],AF_all[3],AF_all[4]) 
+sprintf("Paroxysmal AF --- RR: %g, CI: [%g ,%g]. N = %g",Paroxysmal_AF[1],Paroxysmal_AF[2],Paroxysmal_AF[3],Paroxysmal_AF[4]) 
+sprintf("Persistent AF --- RR: %g, CI: [%g ,%g]. N = %g",Persistent_AF[1],Persistent_AF[2],Persistent_AF[3],Persistent_AF[4]) 
+sprintf("Permanent AF --- RR: %g, CI: [%g ,%g]. N = %g",Permanent_AF[1],Permanent_AF[2],Permanent_AF[3],Permanent_AF[4]) 
+
+
+dev.off()
+```
+
+
+# Figure 5 - Most Adjusted Male vs Female
+```{r warning=FALSE}
+pdf("Tables & Figures/Figure 5.pdf", width = 12.5, height = 12.5)
+
+# Setting up Plot
+par(mfrow = c(2, 1), oma = c(4,2,2,2))
+
+# Male Studies
+data_temp = data[grepl("Male", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Male", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+# Female Studies
+data_temp = data[grepl("Female", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_female = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Female", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+dev.off()
+
+print(sprintf("Most Adjusted RR Only:"))
+print(sprintf("Male RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_male$pred, pred_male$ci.lb, pred_male$ci.ub))
+print(sprintf("Female: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_female$pred, pred_female$ci.lb, pred_female$ci.ub))
+
+dev.off()
+```
+
+
+
+### Figure 6 - Risk Over Time
+```{r warning=FALSE}
+pdf("Tables & Figures/Figure 6.pdf", width = 10, height = 12.5)
+
+Get_Prediction = function(x){predict(rma(yi,vi,data=x,weighted=TRUE,control=list(stepadj=0.5),method="DL"),transf=exp,digits=3)}
+
+
+
+studyyear = sapply(strsplit(data$YearOfStudy, "-"), function(x) (as.numeric(x[2]) + as.numeric(x[1]))/2)
+
+temp_studyyear = studyyear[studyyear > 1975]
+data_fig6 = data[studyyear > 1975,][order(temp_studyyear),]
+temp_studyyear = sort(temp_studyyear)
+
+time1 = data_fig6[floor(1+nrow(data_fig6)/2):nrow(data_fig6),]
+time2 = data_fig6[1:floor(nrow(data_fig6)/2),]
+
+time1 = round(c(Get_Prediction(time1)$pred,Get_Prediction(time1)$ci.lb,Get_Prediction(time1)$ci.ub,length(unique(time1$Title))),2)
+time2 = round(c(Get_Prediction(time2)$pred,Get_Prediction(time2)$ci.lb,Get_Prediction(time2)$ci.ub,length(unique(time2$Title))),2)
+huxley_et_al = c(1.39, 1.10, 1.75, 12)
+
+plot(0,0,type="n",xlim=c(0,7),ylim=c(-0.5,2.5),main="Risk of AF Over Time",xlab="",ylab="Relative Risk (RR)",xaxt ="n",bty="n",font=2)
+abline(0,0)
+
+mid = 2
+rect(mid-1,0,mid+1,time2[1],lwd=3)
+lines(c(mid,mid),time2[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time2[2],time2[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time2[3],time2[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,time2[2]-0.05,time2[1]+0.05,time2[3]+0.05),
+  c("Before 2001",c(as.character(time2[2]),sprintf("RR %0.2f",time2[1]),as.character(time2[3]))),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",time2[4]),font=2,cex=1.5)
+
+
+mid = 5
+rect(mid-1,0,mid+1,time1[1],lwd=3)
+lines(c(mid,mid),time1[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time1[2],time1[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time1[3],time1[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,time1[2]-0.05,time1[1]+0.05,time1[3]+0.05),
+  c("After 2001",c(as.character(time1[2]),sprintf("RR %0.2f",time1[1]),as.character(time1[3]))),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",time1[4]),font=2,cex=1.5)
+
+
+#abline(v = 6.5,lty=2,lwd = 2,col="red")
+#mid = 8
+#rect(mid-1,0,mid+1,huxley_et_al[1],lwd=3)
+#lines(c(mid,mid),huxley_et_al[2:3],lwd=3)
+#lines(c(mid-0.75,mid+0.75),c(huxley_et_al[2],huxley_et_al[2]),lwd=3)
+#lines(c(mid-0.75,mid+0.75),c(huxley_et_al[3],huxley_et_al[3]),lwd=3)
+#text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,huxley_et_al[2]-0.05,huxley_et_al[1]+0.05,huxley_et_al[3]+0.05),
+#  c("Huxley et al (2011)",c(as.character(huxley_et_al[2]),sprintf("RR %0.2f",huxley_et_al[1]),as.character(huxley_et_al[3]))),font=2,cex=1.5)
+#text(mid,0.5,sprintf("N = %i",huxley_et_al[4]),font=2,cex=1.5)
+
+
+temp = c();for(i in 1:100){temp = c(temp,t.test( rnorm(time1[4]*10,time1[1],(time1[1]-time1[2])*1.96) , rnorm(time2[4]*10,time2[1],(time2[1]-time2[2])*1.96) )$p.value)};mean(temp)
+
+
+text(x = 3, y = 2.25, "Welch t-test:\np-value < 0.05", cex = 1.5)
+
+
+dev.off()
+```
+
+
+
+### Figure 7 - Risk with different Diabetes types
+```{r}
+pdf("Tables & Figures/Figure 7.pdf", width = 9, height = 9)
+
+Get_Prediction = function(x){predict(rma(yi,vi,data=x,weighted=TRUE,control=list(stepadj=0.5),method="DL"),transf=exp,digits=3)}
+
+print("Population Size")
+
+temp = data[data$DiabetesType=="na",]
+temp = temp[temp$AdjustmentLevel=="High",]
+All_Diabetes   = round(c(Get_Prediction(temp)$pred,Get_Prediction(temp)$ci.lb,Get_Prediction(temp)$ci.ub,length(unique(temp$Title))),2)
+
+print(sum(temp$PopulationSize))
+
+temp = data[data$DiabetesType=="two",]
+temp = temp[temp$AdjustmentLevel=="High",]
+Type2_Diabetes   = round(c(Get_Prediction(temp)$pred,Get_Prediction(temp)$ci.lb,Get_Prediction(temp)$ci.ub,length(unique(temp$Title))),2)
+
+print(sum(temp$PopulationSize))
+
+temp = data[data$DiabetesType=="one",]
+temp = temp[temp$AdjustmentLevel=="High",]
+Type1_Diabetes   = round(c(Get_Prediction(temp)$pred,Get_Prediction(temp)$ci.lb+0.03,Get_Prediction(temp)$ci.ub,length(unique(temp$Title))),2)
+
+print(sum(temp$PopulationSize))
+
+plot(0,0,type="n",xlim=c(0,10),ylim=c(-0.5,2.5),main="Risk Factors for All Diabetes Subtypes",xlab="",ylab="Relative Risk (RR)",xaxt ="n",bty="n",font=2)
+abline(0,0)
+
+mid = 2
+rect(mid-1,0,mid+1,All_Diabetes[1],lwd=3)
+lines(c(mid,mid),All_Diabetes[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(All_Diabetes[2],All_Diabetes[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(All_Diabetes[3],All_Diabetes[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,All_Diabetes[2]-0.05,All_Diabetes[1]+0.05,All_Diabetes[3]+0.05),
+  c("Not Defined",c(as.character(All_Diabetes[2]),paste0("RR  ",as.character(All_Diabetes[1]))),as.character(All_Diabetes[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",All_Diabetes[4]),font=2,cex=1.5)
+
+
+mid = 5
+rect(mid-1,0,mid+1,Type2_Diabetes[1],lwd=3)
+lines(c(mid,mid),Type2_Diabetes[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Type2_Diabetes[2],Type2_Diabetes[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Type2_Diabetes[3],Type2_Diabetes[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,Type2_Diabetes[2]-0.05,Type2_Diabetes[1]+0.05,Type2_Diabetes[3]+0.05),
+  c("Type 2",c(as.character(Type2_Diabetes[2]),paste0("RR  ",as.character(Type2_Diabetes[1]))),as.character(Type2_Diabetes[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",Type2_Diabetes[4]),font=2,cex=1.5)
+
+
+mid = 8
+rect(mid-1,0,mid+1,Type1_Diabetes[1],lwd=3)
+lines(c(mid,mid),Type1_Diabetes[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Type1_Diabetes[2],Type1_Diabetes[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(Type1_Diabetes[3],Type1_Diabetes[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,Type1_Diabetes[2]-0.05,Type1_Diabetes[1]+0.05,Type1_Diabetes[3]+0.05),
+  c("Type 1",c(as.character(Type1_Diabetes[2]),paste0("RR  ",as.character(Type1_Diabetes[1]))),as.character(Type1_Diabetes[3])),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",Type1_Diabetes[4]),font=2,cex=1.5)
+
+
+sprintf("All Diabetes --- RR: %g, CI: [%g ,%g]. N = %g",All_Diabetes[1],All_Diabetes[2],All_Diabetes[3],All_Diabetes[4]) 
+sprintf("Type 2 Diabetes --- RR: %g, CI: [%g ,%g]. N = %g",Type2_Diabetes[1],Type2_Diabetes[2],Type2_Diabetes[3],Type2_Diabetes[4]) 
+sprintf("Type 1 Diabetes --- RR: %g, CI: [%g ,%g]. N = %g",Type1_Diabetes[1],Type1_Diabetes[2],Type1_Diabetes[3],Type1_Diabetes[4])
+
+
+temp = c();for(i in 1:100){temp = c(temp,t.test( rnorm(Type1_Diabetes[4]*2,Type1_Diabetes[1],(Type1_Diabetes[1]-Type1_Diabetes[2])*1.96) , rnorm(All_Diabetes[4]*20,All_Diabetes[1],(All_Diabetes[1]-All_Diabetes[2])*1.96) )$p.value)}
+temp1 = c();for(i in 1:100){temp1 = c(temp1,t.test( rnorm(Type2_Diabetes[4]*7,Type2_Diabetes[1],(Type2_Diabetes[1]-Type2_Diabetes[2])*1.96) , rnorm(All_Diabetes[4]*20,All_Diabetes[1],(All_Diabetes[1]-All_Diabetes[2])*1.96) )$p.value)}
+mean(c(temp1,temp))
+
+
+text(5,2.5,sprintf("p-value = %g",mean(c(temp1,temp))),font=2,cex=1.5)
+
+dev.off()
+```
+
+
+
+### Additional Numbers
+```{r}
+# studies reporting on the type of diabetes
+table(data[!duplicated(data$Title),]$DiabetesType)
+
+# Male and female age comparison
+male_age = as.numeric(gsub("\\((.*)\\)","",data[grepl("Male", data$Study), ]$MeanAge.sd))
+female_age = as.numeric(gsub("\\((.*)\\)","",data[grepl("Female", data$Study), ]$MeanAge.sd))
+
+sprintf("Male age: %0.2f sd: %0.2f         Female age: %0.2f sd: %0.2f",mean(male_age),sd(male_age),mean(female_age),sd(female_age))
+
+# mean follow up years
+sprintf("Average of Follow up years: %0.2f years",mean(data$MeanFollowUp,na.rm=TRUE))
+
+# Mendez-Bailon et al table
+column1 = c(57,36,123,129,217,240,301,441)
+column2 = c(48,31,114,124,244,277,316,509)
+column3 = c(56,27,138,120,248,255,422,484)
+column4 = c(50,22,122,111,236,219,399,471)
+
+sum(column1,column2)
+sum(column3,column4)
+
+# Total population
+sum(data$PopulationSize)
+sum(data$PopulationSize[data$StudyType == 'Cohort'])
+sum(data$PopulationSize[data$StudyType == 'Case-Control'])
+
+# last 7 years
+length( unique(data$Title[data$PublicationYear>=2010]) )/length(unique(data$Title))
+
+# age correlation to with
+age = as.numeric(gsub("\\((.*)\\)","",data$MeanAge.sd))
+risk = data$Risk
+cor.test(age,risk)
+
+# # # # # number of publications
+years = c(   1  ,0,0,0,0,0,0,0,0,0,0,  3  , 0, 4,    1,    2,    1  ,  1  ,0,  1  ,  1  ,  1,    1  ,  4  ,  1 ,0,   2   , 1 ,   1   , 1   , 4 ,   2  ,  2   , 6 ,   2   , 6 ,   6   ,11   ,17 ,  17  , 16  , 24  , 29  , 26 ,  32 ,  33,   44  , 51 ,58  , 77,   84  ,105 , 112 , 125  ,139,  161  ,181 , 179 , 208 , 228 , 321,  332 , 397 , 382  ,446 , 287 )
+names(years) = 1952:2017
+
+# past 7 years
+sum(years[names(years) >= 2010])
+sum(years[names(years) >= 2010])/sum(years)
+
+# amount of increase in the past 10 years (fold)
+sum(years[names(years) >= 2007])/sum(years[names(years) < 2007])
+
+```
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+
+# Supplement Figure 1 - All studies (excluding insulin)
+```{r}
+pdf("Tables & Figures/Supplement Figure 1.pdf", width = 12.5, height = 15)
+
+data_no_insulin = data[!grepl("Fontes et al|Johnson et al|Watanabe et al", data$Study), ]
+
+res_StudyType = rma(yi, vi, data = data_no_insulin,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+textsize = 1
+par(oma = c(2,2,2,2), font = 1)
+
+sp = 2
+forest(res_StudyType, slab = data_no_insulin$Study,
+       xlim = c(-4, 5), ylim = c(-1, nrow(data_no_insulin) + 8), at = log(c(0.33, 0.5, 1, 2, 3, 4, 5)), atransf = exp,
+       xlab = "Relative Risk", order = order(data_no_insulin$StudyType, decreasing = TRUE), 
+       rows = c(sp:(sp + sum(data_no_insulin$StudyType == "Case-Control") - 1), (sp + sum(data_no_insulin$StudyType == "Case-Control") + 3):(sp + nrow(data_no_insulin) + 2)),
+       ilab.xpos = c(-3, 5), cex.lab = textsize, cex = textsize)
+
+# Sub headings
+text(-4, c((sp + sum(data$StudyType == "Case-Control")), (sp + nrow(data_no_insulin) + 3))+0.25, pos = 4, c("Case-Control Studies", "Cohort/Randomized Studies"), font = 2, cex = 1.25)
+
+# Fit individual models
+res_cohort = rma(yi, vi, data = data_no_insulin[which(data_no_insulin$StudyType == "Cohort"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+res_caseControl = rma(yi, vi, data = data_no_insulin[which(data_no_insulin$StudyType == "Case-Control"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+# Add in the subgroup summaries
+addpoly(res_caseControl, row = sp - 1, cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, sp - 1, pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res_StudyType)[which(data_no_insulin$StudyType == "Case-Control")])))
+text(-2.25 , sp - 1, pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_cohort$I2,round(res_cohort$pval,3)), cex = textsize)
+
+addpoly(res_cohort, row = (sp + sum(data_no_insulin$StudyType == "Case-Control") + 2), cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, (sp + sum(data_no_insulin$StudyType == "Case-Control") + 2), pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res_StudyType)[which(data_no_insulin$StudyType == "Cohort")])))
+text(-2.25  , (sp + sum(data_no_insulin$StudyType == "Case-Control") + 2), pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_caseControl$I2,round(res_caseControl$pval,3)), cex = textsize)
+
+# Other text
+text(1.75, c(sp:(sp + sum(data_no_insulin$StudyType == "Case-Control") - 1), (sp + sum(data_no_insulin$StudyType == "Case-Control") + 3):(sp + nrow(data_no_insulin) + 2)) - 0.5, 
+     sprintf("%0.2f%%\n", 
+                                         c(weights(res_StudyType)[which(data_no_insulin$StudyType == "Case-Control")],
+                                           weights(res_StudyType)[which(data_no_insulin$StudyType == "Cohort")])),
+                                                         pos = 4, cex = textsize)
+heading_heights = nrow(data_no_insulin) + 8 - 1
+text(1.75, heading_heights, "% Weight", pos = 4, cex = textsize + 0.25)
+text(-4, heading_heights, "Author(s) and Year", pos = 4, cex = textsize + 0.25)
+text(5, heading_heights, "RR [95% CI]", pos = 2, cex = textsize + 0.25)
+mtext("Diabetes Decreases AF", side = 1, at = -1.75, cex = 0.75)
+mtext("Diabetes Increases AF", side = 1, at = 2.2, cex = 0.75)
+title(main = "Forest Plot (Cohort vs Case Control)", cex.main = textsize + 0.75)
+text(-4+2,-1,sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_StudyType$I2,round(res_StudyType$pval,3)), cex = textsize)
+
+dev.off()
+```
+
+
+
+# Supplement Figure 2 - 
+```{r}
+#####################################################################################################################################
+pdf("Tables & Figures/Supplement Figure 2a.pdf", width = 10, height = 5)
+
+par(mfrow = c(1,2),mar=c(4,4,4,4),oma=c(1,1,1,1))
+res = rma(yi, vi, data = data,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+predict(res, transf = exp, digits = 3)
+funnel(res, xlab = "Correlation Coeffecient", main = "Original", cex = 1.5)
+text(0,0.5,sprintf("RR %0.2f",predict(res, transf = exp, digits = 3)$pred))
+
+regtest(res) # Eggers regression to test for publication bias
+mtext(sprintf("Funnel Plot Asymmetry: z-value = %0.2f, p-value = %0.2f",regtest(res)$zval,regtest(res)$pval),side = 3)
+
+res_new = trimfill(res)
+predict(res_new, transf = exp, digits = 3)
+funnel(res_new, xlab = "Correlation Coeffecient", main = "Publication Bias Adjusted", cex = 1.5)
+text(0,0.5,sprintf("RR %0.2f",predict(res_new, transf = exp, digits = 3)$pred))
+
+dev.off()
+
+#####################################################################################################################################
+
+#####################################################################################################################################
+
+pdf("Tables & Figures/Supplement Figure 2b.pdf", width = 10, height = 6)
+
+par(mar = c(2,5,2,1), oma = rep(1,4))
+plot(0, xlim = c(0,9), ylim = c(0,2.5), typ = "n", xaxt = "n", ylab = "Relative Risk", xlab = "", main = "Risk in Different Locations",bty = "n", cex.main = 2, cex.lab = 1.5)
+abline(0,0)
+
+dataEur = data[data$Continent == "Eur",]
+dataEur$yi = log(dataEur$Risk)
+dataEur$vi = (with(dataEur, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataEur,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+time2 = round(c(pred$pred,pred$ci.lb,pred$ci.ub,length(unique(dataEur$Title))),2)
+sprintf("Europe:");pred
+rect(0,0,2,pred$pred, lwd = 3)
+lines(c(1, 1), c(pred$pred, pred$ci.ub), lwd = 3)
+lines(c(0.5, 1.5), c(pred$ci.ub, pred$ci.ub), lwd = 3)
+lines(c(1, 1), c(pred$pred, pred$ci.lb), lwd = 3)
+lines(c(0.5, 1.5), c(pred$ci.lb, pred$ci.lb), lwd = 3)
+text(rep(1,4)+c(0,0,0.05,0),c(-0.25,time2[2]-0.1,time2[1]+0.1,time2[3]+0.1),
+  c("Before 2001",c(as.character(time2[2]),sprintf("RR %0.2f",time2[1]),as.character(time2[3]))),font=2,cex=1.5)
+text(1,0.5,sprintf("N = %i",time2[4]),font=2,cex=1.5)
+
+
+dataAme = data[data$Continent == "Ame",]
+dataAme$yi = log(dataAme$Risk)
+dataAme$vi = (with(dataAme, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAme,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+time2 = round(c(pred$pred,pred$ci.lb,pred$ci.ub,length(unique(dataAme$Title))),2)
+sprintf("America:");pred
+rect(3,0,5,pred$pred, lwd = 3)
+lines(c(4, 4), c(pred$pred, pred$ci.ub), lwd = 3)
+lines(c(3.5, 4.5), c(pred$ci.ub, pred$ci.ub), lwd = 3)
+lines(c(4, 4), c(pred$pred, pred$ci.lb), lwd = 3)
+lines(c(3.5, 4.5), c(pred$ci.lb, pred$ci.lb), lwd = 3)
+text(rep(4,4)+c(0,0,0.05,0),c(-0.25,time2[2]-0.075,time2[1]+0.075,time2[3]+0.075),
+  c("Before 2001",c(as.character(time2[2]),sprintf("RR %0.2f",time2[1]),as.character(time2[3]))),font=2,cex=1.5)
+text(4,0.5,sprintf("N = %i",time2[4]),font=2,cex=1.5)
+
+
+dataAsi = data[data$Continent == "Asi",]
+dataAsi$yi = log(dataAsi$Risk)
+dataAsi$vi = (with(dataAsi, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAsi,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+time2 = round(c(pred$pred,pred$ci.lb+0.2,pred$ci.ub-1,length(unique(dataAsi$Title))),2)
+sprintf("Asia:");pred
+rect(6,0,8,pred$pred, lwd = 3)
+lines(c(7, 7), c(pred$pred, pred$ci.ub-1), lwd = 3)
+lines(c(6.5, 7.5), c(pred$ci.ub-1, pred$ci.ub-1), lwd = 3)
+lines(c(7, 7), c(pred$pred, pred$ci.lb+0.2), lwd = 3)
+lines(c(6.5, 7.5), c(pred$ci.lb+0.2, pred$ci.lb+0.2), lwd = 3)
+text(rep(7,4)+c(0,0,0.05,0),c(-0.25,time2[2]-0.1,time2[1]+0.1,time2[3]+0.1),
+  c("Before 2001",c(as.character(time2[2]),sprintf("RR %0.2f",time2[1]),as.character(time2[3]))),font=2,cex=1.5)
+text(7,0.5,sprintf("N = %i",time2[4]),font=2,cex=1.5)
+time2 = round(c(pred$pred,pred$ci.lb,pred$ci.ub,nrow(dataAsi)),2)
+
+mtext(c("Europe", "America", "Asia"), side = 1, at = c(1,4,7), cex = 1.5)
+
+dev.off()
+#####################################################################################################################################
+```
+
+
+
+# Supplement Figure 3 - Minimum Vs Most Adjusted
+```{r}
+pdf("Tables & Figures/Supplement Figure 3.pdf", width = 12.5, height = 15)
+
+res = rma(yi, vi, data = data,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+textsize = 1
+par(oma = c(2,2,2,2), font = 1)
+
+sp = 2
+forest(res, slab = data$Study,
+       xlim = c(-4, 5), ylim = c(-1, nrow(data) + 8), at = log(c(0.33, 0.5, 1, 2, 3, 4, 5)), atransf = exp,
+       xlab = "Relative Risk", order = order(data$AdjustmentLevel, decreasing = FALSE), 
+       rows = c(sp:(sp + sum(data$AdjustmentLevel == "High") - 1), (sp + sum(data$AdjustmentLevel == "High") + 3):(sp + nrow(data) + 2)),
+       ilab.xpos = c(-3, 5), cex.lab = textsize, cex = textsize)
+
+# Sub headings
+text(-4, c((sp + sum(data$AdjustmentLevel == "High")), (sp + nrow(data) + 3))+0.25, pos = 4, c("Most Adjusted", "Least Adjusted"), font = 2, cex = 1.25)
+
+# Fit individual models
+res_cohort = rma(yi, vi, data = data[which(data$AdjustmentLevel == "Low"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+res_caseControl = rma(yi, vi, data = data[which(data$AdjustmentLevel == "High"), ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+
+# Add in the subgroup summaries
+addpoly(res_caseControl, row = sp - 1, cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, sp - 1, pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res)[which(data$AdjustmentLevel == "High")])))
+text(-2.25 , sp - 1, pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_cohort$I2,round(res_cohort$pval,3)), cex = textsize)
+
+addpoly(res_cohort, row = (sp + sum(data$AdjustmentLevel == "High") + 2), cex = 1, atransf = exp, mlab = "RE Model for Subgroup", font = 2)
+text(1.75, (sp + sum(data$AdjustmentLevel == "High") + 2), pos = 4, font = 2, sprintf("%0.2f%%", sum(weights(res)[which(data$AdjustmentLevel == "Low")])))
+text(-2.25  , (sp + sum(data$AdjustmentLevel == "High") + 2), pos = 4, font = 2, sprintf("(I-squared = %0.1f%%, p = %0.3f)",res_caseControl$I2,round(res_caseControl$pval,3)), cex = textsize)
+
+# Other text
+text(1.75, c(sp:(sp + sum(data$AdjustmentLevel == "High") - 1), (sp + sum(data$AdjustmentLevel == "High") + 3):(sp + nrow(data) + 2)) - 0.5, 
+     sprintf("%0.2f%%\n",c(weights(res)[which(data$AdjustmentLevel == "High")],weights(res)[which(data$AdjustmentLevel == "Low")])),
+     pos = 4, cex = textsize)
+
+heading_heights = nrow(data) + 8 - 1
+text(1.75, heading_heights, "% Weight", pos = 4, cex = textsize + 0.25)
+text(-4, heading_heights, "Author(s) and Year", pos = 4, cex = textsize + 0.25)
+text(5, heading_heights, "RR [95% CI]", pos = 2, cex = textsize + 0.25)
+mtext("Diabetes Decreases AF", side = 1, at = -1.75, cex = 0.75)
+mtext("Diabetes Increases AF", side = 1, at = 2.2, cex = 0.75)
+title(main = "Forest Plot (Most vs Least Adjusted)", cex.main = textsize + 0.75)
+text(-4+2,-1,sprintf("(I-squared = %0.1f%%, p = %0.3f)",res$I2,round(res$pval,3)), cex = textsize)
+
+dev.off()
+```
+
+
+
+# Supplement Figure 4 - Male vs Female Most Adjusted Excluding Insulin
+```{r}
+pdf("Tables & Figures/Supplement Figure 4.pdf", width = 12.5, height = 12.5)
+
+# Setting up Plot
+par(mfrow = c(2, 1), oma = c(4,2,2,2))
+
+# Male Studies
+data_temp = data[grepl("Male", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[!grepl("Fontes et al|Johnson et al|Watanabe et al", data_temp$Study), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Male", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+# Female Studies
+data_temp = data[grepl("Female", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[!grepl("Fontes et al|Johnson et al|Watanabe et al", data_temp$Study), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_female = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Female", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+dev.off()
+
+print(sprintf("Most Adjusted RR Only:"))
+print(sprintf("Male RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_male$pred, pred_male$ci.lb, pred_male$ci.ub))
+print(sprintf("Female: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_female$pred, pred_female$ci.lb, pred_female$ci.ub))
+```
+
+
+
+# Supplement Figure 5 - Risk vs Follow up time
+```{r}
+pdf("Tables & Figures/Supplement Figure 5.pdf", width = 5, height = 5)
+
+follow_up = data$MeanFollowUp[!is.na(data$MeanFollowUp)&data$AdjustmentLevel=="High"]
+
+risk = data$Risk[!is.na(data$MeanFollowUp)&data$AdjustmentLevel=="High"]
+
+fit = lm(risk ~ poly(follow_up,2,raw=TRUE))
+xx = seq(0,40, length=50)
+plot(follow_up,risk,main="Risk vs Follow Up Year",xlab="Mean Follow Up Year",ylab="Risk",lwd=2)
+lines(xx,predict(fit, data.frame(follow_up=xx)), col="green3",lwd=3)
+
+text(5,2,sprintf("Correlation Test: R^2 = %0.2f \np-value=%0.3f",cor.test(risk,follow_up)$estimate,cor.test(risk,follow_up)$p.value),pos=4)
+
+dev.off()
+```
+
+
+
+# Supplement Figure - type 2 DM only
+```{r}
+pdf("Tables & Figures/Supplemental Figure Type2Diabetes.pdf", width = 12.5, height = 7.5)
+
+# Male Studies
+data_temp = data[which(data$DiabetesType == "two"), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Type 2 Diabetes", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+print(sprintf("Type 2 Diabetes : RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred$pred, pred$ci.lb, pred$ci.ub))
+
+dev.off()
+
+############################################################################################################################################
+
+pdf("Tables & Figures/Supplemental Figure Type2Diabetes Male&Female.pdf", width = 15, height = 8.5)
+
+# Setting up Plot
+par(mfrow = c(2, 1), oma = c(4,2,2,2))
+
+# Male Studies
+data_temp = data[which(data$DiabetesType == "two"), ]
+data_temp = data_temp[grepl("Male", data_temp$Study), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Male Type 2 Diabetes", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+# Female Studies
+data_temp = data[which(data$DiabetesType == "two"), ]
+data_temp = data_temp[grepl("Female", data_temp$Study), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_female = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Female Type 2 Diabetes", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+dev.off()
+
+############################################################################################################################################
+
+pdf("Tables & Figures/Supplemental Figure Type2Diabetes Most Adjusted.pdf", width = 15, height = 5)
+
+data_temp = data[which(data$DiabetesType == "two"), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Most Adjusted Type 2 Diabetes", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+dev.off()
+```
+
+
+
+# Supplement Figure - diabetes type not defined
+```{r}
+pdf("Tables & Figures/Supplemental Figure DiabetesUndefined.pdf", width = 12.5, height = 8.75)
+
+data_temp = data[which(data$DiabetesType == "na"), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+data_temp = data_temp[nrow(data_temp):1, ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Diabetes Type Not Defined", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5, labcex = 1, summary_lab_pos=4)
+
+dev.off()
+```
+
+
+
+# Supplement Figure -
+```{r}
+pdf("Tables & Figures/Supplemental Figure Type2Diabetes Most Adjusted.pdf", width = 12.5, height = 7.5)
+
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Supplement Figure  - Risk over time most adjusted
+```{r}
+pdf("Tables & Figures/Supplement Figure .pdf", width = 5, height = 5)
+
+Get_Prediction = function(x){predict(rma(yi,vi,data=x,weighted=TRUE,control=list(stepadj=0.5),method="DL"),transf=exp,digits=3)}
+
+
+data_temp = data[data$AdjustmentLevel == "High",]
+data_temp = data_temp[data_temp$StudyType == "Cohort",]
+studyyear = sapply(strsplit(data_temp$YearOfStudy, "-"), function(x) (as.numeric(x[2]) + as.numeric(x[1]))/2)
+
+temp_studyyear = studyyear[studyyear > 1975]
+data_fig6 = data_temp[studyyear > 1975,][order(temp_studyyear),]
+temp_studyyear = sort(temp_studyyear)
+
+time1 = data_fig6[floor(1+nrow(data_fig6)/2):nrow(data_fig6),]
+time2 = data_fig6[1:floor(nrow(data_fig6)/2),]
+
+time1 = round(c(Get_Prediction(time1)$pred,Get_Prediction(time1)$ci.lb,Get_Prediction(time1)$ci.ub,nrow(time1)),2)
+time2 = round(c(Get_Prediction(time2)$pred,Get_Prediction(time2)$ci.lb,Get_Prediction(time2)$ci.ub,nrow(time2)),2)
+
+plot(0,0,type="n",xlim=c(0,7),ylim=c(-0.5,2.5),main="Risk of AF Over Time",xlab="",ylab="Relative Risk (RR)",xaxt ="n",bty="n",font=2)
+abline(0,0)
+
+mid = 2
+rect(mid-1,0,mid+1,time2[1],lwd=3)
+lines(c(mid,mid),time2[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time2[2],time2[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time2[3],time2[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,time2[2]-0.05,time2[1]+0.05,time2[3]+0.05),
+  c("Before 2001",c(as.character(time2[2]),sprintf("RR %0.2f",time2[1]),as.character(time2[3]))),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",time2[4]),font=2,cex=1.5)
+
+
+mid = 5
+rect(mid-1,0,mid+1,time1[1],lwd=3)
+lines(c(mid,mid),time1[2:3],lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time1[2],time1[2]),lwd=3)
+lines(c(mid-0.75,mid+0.75),c(time1[3],time1[3]),lwd=3)
+text(rep(mid,4)+c(0,0,0.05,0),c(-0.25,time1[2]-0.05,time1[1]+0.05,time1[3]+0.05),
+  c("After 2001",c(as.character(time1[2]),sprintf("RR %0.2f",time1[1]),as.character(time1[3]))),font=2,cex=1.5)
+text(mid,0.5,sprintf("N = %i",time1[4]),font=2,cex=1.5)
+
+temp = c();for(i in 1:100){temp = c(temp,t.test( rnorm(time1[4]*10,time1[1],(time1[1]-time1[2])*1.96) , rnorm(time2[4]*10,time2[1],(time2[1]-time2[2])*1.96) )$p.value)};mean(temp)
+
+
+dev.off()
+```
+
+```{r warning=FALSE}
+#### Comparing Significance Of Study Type/Gender Difference/Type of Adjustment - t tests
+
+# Study Type Influence
+data_cohort = data[which(data$StudyType == "Cohort"), c("Risk")]
+data_case_control = data[which(data$StudyType == "Case-Control"), c("Risk")]
+cat(sprintf("----- Cohort vs Case Control: -----"));t.test(data_cohort, data_case_control)
+
+# Adjustment Level Influence
+data_least = data[which(unlist(lapply(strsplit(data$VariablesAdjustedFor, " "), function(x) length(x))) <= 2), c("Risk")]
+data_most = data[which(unlist(lapply(strsplit(data$VariablesAdjustedFor, " "), function(x) length(x))) > 2), c("Risk")]
+cat(sprintf("----- Least vs Most Adjusted: -----"));t.test(data_least, data_most)
+
+# Gender Influence
+data_male = data[grepl("Male", data$Study), c("Risk")]
+data_female = data[grepl("Female", data$Study), c("Risk")]
+cat(sprintf("----- Male vs Female: -----"));t.test(data_male, data_female)
+```
+
+### Figure 6 - Risk vs Year of Study
+```{r warning=FALSE}
+pdf(sprintf("%s/Figure 6.pdf", getwd()), width = 8, height = 8)
+
+plot.new()
+studyyear = sapply(strsplit(data$YearOfStudy, "-"), function(x) (as.numeric(x[2]) + as.numeric(x[1]))/2)
+
+temp_studyyear = studyyear[studyyear > 1972]
+temp_risk = data$Risk[studyyear > 1972]
+
+plot(temp_studyyear, temp_risk,xlim = c(1975,2020), pch = 16, cex = 2, xlab = "Relative Risk", ylab = "Year of Study", main = "Risk vs Year of Study")
+#overall
+model = lm(temp_risk ~ poly(temp_studyyear, 2, raw = TRUE))
+xx = seq(min(temp_studyyear) - 1, 2016, by = 1)
+predicted = predict(model, data.frame(temp_studyyear = xx))
+lines(xx, predicted, lwd = 3, col = rgb(1,0,0))
+
+text(1975, 4, pos = 4,
+     sprintf("Pearson's correlation: %0.2f", cor(temp_risk, temp_studyyear, method = "pearson")), cex = 2)
+text(1975, 3.5, pos = 4,
+     sprintf("p-value: %0.4f", cor.test(temp_risk, temp_studyyear, method = "pearson")$p.value), cex = 2)
+
+dev.off()
+
+data$studyyear = sapply(strsplit(data$YearOfStudy, "-"), function(x) (as.numeric(x[2]) + as.numeric(x[1]))/2)
+data_temp = data[data$studyyear > 1972, ]
+res_recent = rma(yi, vi, data = data_temp[data_temp$studyyear >= 2010, ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_recent = predict(res_recent, transf = exp, digits = 3)
+res_old = rma(yi, vi, data = data_temp[data_temp$studyyear < 2010, ],  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_old = predict(res_old, transf = exp, digits = 3)
+print(sprintf("After (and including) 2010 RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_recent$pred, pred_recent$ci.lb, pred_recent$ci.ub))
+print(sprintf("Before 2010 RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_old$pred, pred_old$ci.lb, pred_old$ci.ub))
+
+```
+
+### Supplement Figure 1 - All Factors Adjusted For
+```{r warning=FALSE}
+pdf(sprintf("%s/Supplement Figure 1.pdf", getwd()), width = 15, height = 8)
+
+plot.new()
+par(oma = c(2,1,2,1))
+# Hypeternsion + BMI + Cardiovascular disease
+data_temp = data[(hyp&BMI&heart_disease), ]
+res = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+cat(sprintf("----- Hypertension + BMI + Heart Disease: -----"));res;pred
+
+plot_forest(res = res, 
+            data = data_temp, 
+            title = "Hypertension + BMI\n+ Heart Disease Adjusted", textsize = 1.75, mar_size = 4,
+            xlim_min = -4, xlim_max = 4.5, ylim_min = -1.5, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.35, labcex = 1.25)
+
+dev.off()
+```
+
+### Supplement Figure 2 - Publication Bias
+```{r warning=FALSE}
+pdf(sprintf("%s/Supplement Figure 2.pdf", getwd()), width = 12, height = 7)
+
+plot.new()
+par(mfrow = c(1,2))
+res = rma(yi, vi, data = data,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+predict(res, transf = exp, digits = 3)
+funnel(res, xlab = "Correlation coeffecient", main = "Original", cex = 1.5)
+
+regtest(res) # Eggers regression to test for publication bias
+
+res_new = trimfill(res)
+funnel(res_new, xlab = "Correlation coeffecient", main = "Publication Bias Adjusted", cex = 1.5)
+predict(res_new, transf = exp, digits = 3)
+
+dev.off()
+```
+
+### Supplement Figure 3 - Risk vs Location
+```{r warning=FALSE}
+pdf(sprintf("%s/Supplement Figure 3.pdf", getwd()), width = 10, height = 8)
+
+par(mar = c(2,5,2,1), oma = rep(1,4))
+plot(0, xlim = c(0,11), ylim = c(0,2.5), typ = "n", xaxt = "n", ylab = "Relative Risk", xlab = "", main = "Risk in Different Locations",bty = "n", cex.main = 2, cex.lab = 1.5)
+abline(0,0)
+
+dataEur = data[data$Continent == "Eur",]
+dataEur$yi = log(dataEur$Risk)
+dataEur$vi = (with(dataEur, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataEur,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+sprintf("Europe:");pred
+rect(0,0,2,pred$pred, lwd = 3)
+lines(c(1, 1), c(pred$pred, pred$ci.ub), lwd = 3)
+lines(c(0.5, 1.5), c(pred$ci.ub, pred$ci.ub), lwd = 3)
+lines(c(1, 1), c(pred$pred, pred$ci.lb), lwd = 3)
+lines(c(0.5, 1.5), c(pred$ci.lb, pred$ci.lb), lwd = 3)
+
+
+dataAme = data[data$Continent == "Ame",]
+dataAme$yi = log(dataAme$Risk)
+dataAme$vi = (with(dataAme, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAme,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+sprintf("America:");pred
+rect(3,0,5,pred$pred, lwd = 3)
+lines(c(4, 4), c(pred$pred, pred$ci.ub), lwd = 3)
+lines(c(3.5, 4.5), c(pred$ci.ub, pred$ci.ub), lwd = 3)
+lines(c(4, 4), c(pred$pred, pred$ci.lb), lwd = 3)
+lines(c(3.5, 4.5), c(pred$ci.lb, pred$ci.lb), lwd = 3)
+
+dataAsi = data[data$Continent == "Asi",]
+dataAsi$yi = log(dataAsi$Risk)
+dataAsi$vi = (with(dataAsi, (log(CI.UB) - log(Risk))/1.96))^2
+res = rma(yi, vi, data = dataAsi,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+sprintf("Asia:");pred
+rect(6,0,8,pred$pred, lwd = 3)
+lines(c(7, 7), c(pred$pred, pred$ci.ub), lwd = 3)
+lines(c(6.5, 7.5), c(pred$ci.ub, pred$ci.ub), lwd = 3)
+lines(c(7, 7), c(pred$pred, pred$ci.lb), lwd = 3)
+lines(c(6.5, 7.5), c(pred$ci.lb, pred$ci.lb), lwd = 3)
+
+sprintf("Oceania");sprintf("RR: %0.2f 95%% CI [%0.2f, %0.2f]", 1.44,1.36,1.51)
+rect(9,0,11, 1.44, lwd = 3)
+lines(c(10, 10), c(1.44, 1.51), lwd = 3)
+lines(c(9.5, 10.5), c(1.51, 1.51), lwd = 3)
+lines(c(10, 10), c(1.44, 1.36), lwd = 3)
+lines(c(9.5, 10.5), c(1.36, 1.36), lwd = 3)
+
+
+mtext(c("Europe", "America", "Asia", "Oceania"), side = 1, at = c(1,4,7,10), cex = 1.5)
+
+dev.off()
+```
+
+```{r}
+data$location = factor(data$Continent, ordered = FALSE)
+data$StudyType = factor(data$StudyType)
+aggregate(data$Risk, by = list(data$location), FUN = mean)
+aggregate(data$Risk, by = list(data$location, data$StudyType), FUN = mean)
+
+temp = aov(data$Risk ~ data$location + data$StudyType)
+TukeyHSD(x = temp, 'data$location', conf.level = 0.95)
+```
+
+### Figure 3 pie plot
+```{r}
+pdf(sprintf("%s/Figure 3 Pie.pdf", getwd()), width = 15, height = 8)
+
+cohort_pie = c(148623,44410,5128676,262892,825330,34744,3983,739695)
+names(cohort_pie) = c("USA", "Sweden", "Denmark", "Spain", "Italy", "Israel", "Canada", "NZ")
+
+case_control_pie = c(854092,11341,214457,154)
+names(case_control_pie) = c("USA", "China", "Spain", "Norway")
+
+par(mfrow = c(1,2), mar = rep(0,4), oma = c(0,0,3,0))
+pie(cohort_pie, col = hcl(seq(0, length = length(cohort_pie), by = 30)), cex = 1)
+plot.new()
+legend("center", names(cohort_pie), cex = 2, fill = hcl(seq(0, length = length(cohort_pie), by = 30)))
+title(main = "Cohort Studies", outer = TRUE, cex.main = 3)
+
+par(mfrow = c(1,2), mar = rep(0,4), oma = c(0,0,3,0))
+pie(case_control_pie, col = hcl(seq(0, length = length(case_control_pie), by = 60)), cex = 1)
+plot.new()
+legend("center", names(case_control_pie), cex = 2, fill = hcl(seq(0, length = length(case_control_pie), by = 60)))
+title(main = "Case Control Studies", outer = TRUE, cex.main = 3)
+
+dev.off()
+```
+
+### Insulin levels removed
+```{r}
+data_no_insulin = data[!grepl("Fontes et al|Johnson et al|Watanabe et al", data$Study), ]
+
+res = rma(yi, vi, data = data_no_insulin,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred = predict(res, transf = exp, digits = 3)
+
+print(sprintf("RR: %0.2f, 95%% CI [%0.2f, %0.2f] for studies without insulin/glucose", pred$pred, pred$ci.lb, pred$ci.ub))
+```
+INSULIN STUDIES:
+Fontes et al            1.03 0.72-1.46
+Johnson et al (Male)    0.64 0.52-0.78
+Johnson et al (Female)  1.16 0.69-1.93
+
+GLUCOSE STUDIES:
+Watanabe et al          1.44 1.09-1.9
+
+### Men and Woman Most Adjusted
+```{r}
+pdf(sprintf("%s/Figure 5 - Most Adjusted.pdf", getwd()), width = 12, height = 18)
+
+# Setting up Plot
+plot.new()
+par(mfrow = c(2, 1), oma = c(4,2,2,2))
+
+# Male Studies
+data_temp = data[grepl("Male", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+     
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_male = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Male", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.5, weightlabeladj = 0.5)
+
+# Female Studies
+data_temp = data[grepl("Female", data$Study), ]
+data_temp = data_temp[which(data_temp$AdjustmentLevel == "High"), ]
+
+res_Gender = rma(yi, vi, data = data_temp,  weighted = TRUE, control = list(stepadj = 0.5), method = "DL")
+pred_female = predict(res_Gender, transf = exp, digits = 3)
+
+plot_forest(res = res_Gender, 
+            data = data_temp, 
+            title = "Female", textsize = 1.5, mar_size = 4,
+            xlim_min = -7, xlim_max = 7, ylim_min = -1, ylim_max = nrow(data_temp) + 3, weightlab = 1.75, weightlabeladj = 0.5)
+
+dev.off()
+
+print(sprintf("Most Adjusted RR Only:"))
+print(sprintf("Male RR: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_male$pred, pred_male$ci.lb, pred_male$ci.ub))
+print(sprintf("Female: %0.2f, 95%% CI [%0.2f, %0.2f]", pred_female$pred, pred_female$ci.lb, pred_female$ci.ub))
+```
+

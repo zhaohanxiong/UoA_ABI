@@ -1,0 +1,86 @@
+# Utah LGE-MRI Evaluations
+```{r}
+setwd("C:/Users/zxio506/Desktop/Catheter Path Test Set")
+
+dat = read.csv("Test_Evaluation.csv")
+dat = dat[3:(nrow(dat) - 4),]          # simulated
+#dat = dat[(nrow(dat) - 3):nrow(dat),] # waikato
+#dat = dat[1:2,]                       # melbourne
+
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Techinical")
+ls[[2]] = sprintf("Dice  %0.1f (%0.1f)",mean(dat$DSC)*100,sd(dat$DSC)*100)
+ls[[3]] = sprintf("STSD  %0.2f (%0.2f)",mean(dat$s2s_dist/0.625),sd(dat$s2s_dist/0.625))
+ls[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat$sty)*100,sd(dat$sty)*100)
+ls[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat$spy)*100,sd(dat$spy)*100)
+
+ls[[6]]  = sprintf("------------------------------------------------------- Diameter")
+ls[[7]]  = sprintf("Gt Dia   %0.1f (%0.1f)",mean(dat$true_dia),sd(dat$true_dia))
+ls[[8]]  = sprintf("Pred Dia %0.1f (%0.1f)",mean(dat$pred_dia),sd(dat$pred_dia ))
+ls[[9]]  = sprintf("Abs Err  %0.1f (%0.1f)",mean(dat$dia_err),sd(dat$dia_err))
+ls[[10]] = sprintf("%% Err   %0.1f (%0.1f)",mean(dat$dia_per)*100,sd(dat$dia_per)*100)
+
+ls[[11]] = sprintf("------------------------------------------------------- Volume")
+ls[[12]] = sprintf("Gt Vol   %0.1f (%0.1f)",mean(dat$true_vol)/1000,sd(dat$true_vol)/1000)
+ls[[13]] = sprintf("Pred Vol %0.1f (%0.1f)",mean(dat$pred_vol)/1000,sd(dat$pred_vol)/1000)
+ls[[14]] = sprintf("Abs Err  %0.1f (%0.1f)",mean(dat$vol_err)/1000,sd(dat$vol_err)/1000)
+ls[[15]] = sprintf("%% Err   %0.1f (%0.1f)",mean(dat$vol_per)*100,sd(dat$vol_per)*100)
+
+cat(paste(unlist(ls),collapse="\n"))
+```
+
+# Coverage Analysis
+```{r}
+dat = read.csv("Test_Evaluation.csv")
+
+ls = list()
+ls[[1]] = sprintf("Cor Test DSC:          %0.2f",cor.test(dat$DSC,dat$coverage)$estimate)
+ls[[2]] = sprintf("Cor Test STSD:         %0.2f",cor.test(dat$s2s_dist,dat$coverage)$estimate)
+ls[[3]] = sprintf("Cor Test Sensitivity:  %0.2f",cor.test(dat$sty,dat$coverage)$estimate)
+ls[[4]] = sprintf("Cor Test Specificity:  %0.2f",cor.test(dat$spy,dat$coverage)$estimate)
+ls[[5]] = sprintf("Cor Test Diameter Err: %0.2f",cor.test(dat$dia_per,dat$coverage)$estimate)
+ls[[6]] = sprintf("Cor Test Volume Err:   %0.2f",cor.test(dat$vol_per,dat$coverage)$estimate)
+
+cat(paste(unlist(ls),collapse="\n"))
+
+#cor.test(dat$s2s_dist,dat$coverage)$estimate
+#cor.test(dat$sty,dat$coverage)$estimate
+#cor.test(dat$spy,dat$coverage)$estimate
+#cor.test(dat$dia_per,dat$coverage)$estimate
+#cor.test(dat$vol_per,dat$coverage)$estimate
+
+ls = list()
+ls[[1]] = sprintf("Average Coverage: %0.1f (%0.1f)",
+                  mean(dat[3:(nrow(dat) - 4),]$coverage*100),sd(dat[3:(nrow(dat) - 4),]$coverage*100))
+ls[[2]] = sprintf("Average Coverage: %0.1f (%0.1f)",
+                  mean(dat[(nrow(dat) - 3):nrow(dat),]$coverage*100),sd(dat[(nrow(dat) - 3):nrow(dat),]$coverage*100))
+ls[[3]] = sprintf("Average Coverage: %0.1f (%0.1f)",
+                  mean(dat[1:2,]$coverage*100),sd(dat[1:2,]$coverage*100))
+
+cat(paste(unlist(ls),collapse="\n"))
+```
+
+# Coverage Correlation Plots
+```{r}
+library("ggplot2")
+library("gridExtra")
+
+p1 = ggplot(dat, aes(x=DSC, y=coverage)) + geom_smooth(method=lm,color="tomato",fill="orange",alpha=0.2) +
+            geom_point(size=2,color="purple",alpha=0.5)# + coord_cartesian(ylim=c(18, 32),xlim=c(8, 26))
+
+p2 = ggplot(dat, aes(x=vol_per, y=coverage)) + geom_smooth(method=lm,color="tomato",fill="orange",alpha=0.2) +
+            geom_point(size=2,color="purple",alpha=0.5)# + coord_cartesian(ylim=c(18, 32),xlim=c(8, 26))
+
+grid.arrange(p1, p2, nrow = 2)
+```
+
+# Visualize 3D Points
+```{r}
+library("car")
+
+f  = "2 Path LA"
+df = read.csv(paste0("C:/Users/zxio506/Desktop/",f,".csv"))
+
+scatter3d(x = df$X1, y = df$X2, z = df$X3, point.col = "blue", surface=FALSE)
+```
+

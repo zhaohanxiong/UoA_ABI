@@ -1,0 +1,82 @@
+
+```{r}
+library("car")
+
+#setwd("C:/Users/zxio506/Desktop/Atria_Data/CatheterPath/2020_Melbourne_PointCloud/Export_PVI-11_27_2020-16-11-08")
+setwd("C:/Users/zxio506/Desktop")
+```
+
+# Setup and Helper Functions
+```{r}
+f = "RA.mesh"
+
+txt = readLines(f)
+
+ind1 = grep("VerticesSection",  txt) + 1
+ind2 = grep("TrianglesSection", txt) - 2
+
+txt = txt[ind1:ind2]
+
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+txt = txt[txt!=""]
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+colnames(dat) = strsplit(txt[1]," ")[[1]]
+
+#scatter3d(x = dat$NormalX, y = dat$NormalY, z = dat$NormalZ, point.col = "blue", surface=FALSE)
+scatter3d(x = dat$X, y = dat$Y, z = dat$Z, point.col = "blue", surface=FALSE)
+```
+
+```{r}
+f = "PVI 12_06_2020 14-36-55.xml"
+
+txt = readLines(f)
+
+ind1 = grep('-LA" Index=',txt)[1]
+#ind1 = grep('-Map" Index=',txt)[1]
+#ind1 = grep('-ReLA" Index=',txt)[1]
+#ind1 = grep('-SR" Index=',txt)[1]
+#ind1 = grep('-ReSR" Index=',txt)[1]
+#ind1 = grep('-RA" Index=',txt)[1]
+#ind1 = grep('-RA" Index=',txt)[2]
+#ind1 = grep('-ReSRch" Index=',txt)[1]
+#ind1 = grep('-ReSRch" Index=',txt)[2]
+#ind1 = grep('-RAch" Index=',txt)[1]
+
+ind2 = grep('</Map>',txt[ind1:length(txt)])[1] + ind1
+  
+txt = txt[ind1:ind2]
+
+txt = txt[grepl("CathOrientation",txt)]
+txt = sapply(txt, function(x)
+              substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+names(txt) = NULL
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt," "))), byrow=TRUE, ncol=3))
+
+scatter3d(x = dat$X1, y = dat$X2, z = dat$X3, point.col = "blue", surface=FALSE)
+```
+
+```{r}
+f = "1-LA_car.txt"
+
+txt = readLines(f)
+
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+txt = txt[txt!=""]
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+
+scatter3d(x = dat$X5, y = dat$X6, z = dat$X7, point.col = "blue", surface=FALSE)
+```
+

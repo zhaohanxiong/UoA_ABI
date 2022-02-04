@@ -1,0 +1,319 @@
+# INITIALIZATION
+```{r}
+patients = c(
+"00003pre",
+"00004pre",
+"00005pre",
+"00007",
+"00007v2pre",
+"000010",
+"000010v2pre",
+"1364 3mo",
+"1364 pre",
+"1387 4mo",
+"1387 8mo",
+"1387 pre",
+"1398 3mo",
+"1398 7mo",
+"1398 pre",
+"1399 3mo",
+"1399 pre",
+"1401 3mo",
+"1401 pre",
+"1404 3mo",
+"1404 pre",
+"1421 4mo",
+"1421 pre",
+"1432 3mo",
+"1432 pre",
+"1460 3mo",
+"1460 pre",
+"1462 3mo",
+"1462 pre",
+"1467 4mo",
+"1467 pre",
+"1500 4mo",
+"1500 pre",
+"1504 4mo",
+"1504 pre",
+"1522 3mo",
+"1522 pre")
+```
+
+
+# LGE-MRI Evaluations
+```{r}
+setwd("C:/Users/zxio506/Desktop/UtahWaikato Test Set")
+
+dat = read.csv("RAendo.csv") # LAendo.csv RAendo.csv LARAepi.csv
+dat = cbind(patients,dat)
+
+# filter by waikato/utah
+dat = dat[grepl("0000",patients),]  # waikato
+#dat = dat[!grepl("0000",patients),] # utah
+
+# pre/post ablation
+dat1 = dat[grepl("pre",dat$patients),]
+dat2 = dat[!grepl("pre",dat$patients),]
+
+# Techinical Evals #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat$DSC)*100,sd(dat$DSC)*100)
+ls[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat$s2s_dist),sd(dat$s2s_dist))
+ls[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat$sty)*100,sd(dat$sty)*100)
+ls[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat$spy)*100,sd(dat$spy)*100)
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat1$DSC)*100,sd(dat1$DSC)*100)
+ls1[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat1$s2s_dist),sd(dat1$s2s_dist))
+ls1[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat1$sty)*100,sd(dat1$sty)*100)
+ls1[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat1$spy)*100,sd(dat1$spy)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat2$DSC)*100,sd(dat2$DSC)*100)
+ls2[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat2$s2s_dist),sd(dat2$s2s_dist))
+ls2[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat2$sty)*100,sd(dat2$sty)*100)
+ls2[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat2$spy)*100,sd(dat2$spy)*100)
+
+print(unlist(ls))
+print(unlist(ls1))
+print(unlist(ls2))
+
+# Diameter Error #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("Gt Dia %0.1f (%0.1f)",mean(dat$true_dia),sd(dat$true_dia))
+ls[[3]] = sprintf("Pred Dia %0.1f (%0.1f)",mean(dat$pred_dia),sd(dat$pred_dia ))
+ls[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat$dia_err),sd(dat$dia_err))
+ls[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat$dia_per)*100,sd(dat$dia_per)*100)
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("Gt Dia %0.1f (%0.1f)",mean(dat1$true_dia),sd(dat1$true_dia))
+ls1[[3]] = sprintf("Pred Dia %0.1f (%0.1f)",mean(dat1$pred_dia),sd(dat1$pred_dia ))
+ls1[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat1$dia_err),sd(dat1$dia_err))
+ls1[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat1$dia_per)*100,sd(dat1$dia_per)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("Gt Dia %0.1f (%0.1f)",mean(dat2$true_dia),sd(dat2$true_dia))
+ls2[[3]] = sprintf("Pred Dia %0.1f (%0.1f)",mean(dat2$pred_dia),sd(dat2$pred_dia ))
+ls2[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat2$dia_err),sd(dat2$dia_err))
+ls2[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat2$dia_per)*100,sd(dat2$dia_per)*100)
+
+print(unlist(ls))
+print(unlist(ls1))
+print(unlist(ls2))
+
+# Volume Error #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("Gt Vol %0.1f (%0.1f)",mean(dat$true_vol)/1000,sd(dat$true_vol)/1000)
+ls[[3]] = sprintf("Pred Vol %0.1f (%0.1f)",mean(dat$pred_vol)/1000,sd(dat$pred_vol)/1000)
+ls[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat$vol_err)/1000,sd(dat$vol_err)/1000)
+ls[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat$vol_per)*100,sd(dat$vol_per)*100)
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("Gt Vol %0.1f (%0.1f)",mean(dat1$true_vol)/1000,sd(dat1$true_vol)/1000)
+ls1[[3]] = sprintf("Pred Vol %0.1f (%0.1f)",mean(dat1$pred_vol)/1000,sd(dat1$pred_vol)/1000)
+ls1[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat1$vol_err)/1000,sd(dat1$vol_err)/1000)
+ls1[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat1$vol_per)*100,sd(dat1$vol_per)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("Gt Vol %0.1f (%0.1f)",mean(dat2$true_vol)/1000,sd(dat2$true_vol)/1000)
+ls2[[3]] = sprintf("Pred Vol %0.1f (%0.1f)",mean(dat2$pred_vol)/1000,sd(dat2$pred_vol)/1000)
+ls2[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat2$vol_err)/1000,sd(dat2$vol_err)/1000)
+ls2[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat2$vol_per)*100,sd(dat2$vol_per)*100)
+
+cat(paste(unlist(ls),collapse="\n"))
+cat(paste(unlist(ls1),collapse="\n"))
+cat(paste(unlist(ls2),collapse="\n"))
+```
+
+```{r}
+# Sphericity Error #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("Gt Sph %0.1f (%0.1f)",mean(dat$true_sphericity),sd(dat$true_sphericity))
+ls[[3]] = sprintf("Pred Sph %0.1f (%0.1f)",mean(dat$pred_sphericity),sd(dat$pred_sphericity))
+ls[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat$sphe_err),sd(dat$sphe_err))
+ls[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat$sphe_per)*100,sd(dat$sphe_per)*100)
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("Gt Sph %0.1f (%0.1f)",mean(dat1$true_sphericity),sd(dat1$true_sphericity))
+ls1[[3]] = sprintf("Pred Sph %0.1f (%0.1f)",mean(dat1$pred_sphericity),sd(dat1$pred_sphericity))
+ls1[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat1$sphe_err),sd(dat1$sphe_err))
+ls1[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat1$sphe_per)*100,sd(dat1$sphe_per)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("Gt Sph %0.1f (%0.1f)",mean(dat2$true_sphericity),sd(dat2$true_sphericity))
+ls2[[3]] = sprintf("Pred Sph %0.1f (%0.1f)",mean(dat2$pred_sphericity),sd(dat2$pred_sphericity))
+ls2[[4]] = sprintf("Abs Err %0.1f (%0.1f)",mean(dat2$sphe_err),sd(dat2$sphe_err))
+ls2[[5]] = sprintf("%% Err %0.1f (%0.1f)",mean(dat2$sphe_per)*100,sd(dat2$sphe_per)*100)
+
+cat(paste(unlist(ls),collapse="\n"))
+cat(paste(unlist(ls1),collapse="\n"))
+cat(paste(unlist(ls2),collapse="\n"))
+```
+
+# UK Biobank Evaluation
+```{r}
+#setwd("C:/Users/Administrator/Desktop/UKBiobank_LA_2CH_Model+Results_600test")
+setwd("C:/Users/Administrator/Desktop/UKBiobank_LA_4CH_Model+Results_600test")
+
+dat = read.csv("RAendo.csv") # LAendo.csv RAendo.csv
+
+dat = dat[dat$DSC != 1,]
+
+# es/ed
+dat1 = rep(NA,ncol(dat))
+dat2 = rep(NA,ncol(dat))
+
+for (i in seq(1,nrow(dat),by=2)) {
+  
+  if (dat$true_vol[i] > dat$true_vol[i+1]) {
+    dat1 = rbind(dat1,dat[i+1,])
+    dat2 = rbind(dat2,dat[i,])
+  } else {
+    dat1 = rbind(dat1,dat[i,])
+    dat2 = rbind(dat2,dat[i+1,])
+  }
+}
+dat1 = dat1[-1,]
+dat2 = dat2[-1,]
+
+# Techinical Evals #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat$DSC)*100,sd(dat$DSC)*100)
+ls[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat$s2s_dist),sd(dat$s2s_dist))
+ls[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat$sty)*100,sd(dat$sty)*100)
+ls[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat$spy)*100,sd(dat$spy)*100)
+ls[[6]] = sprintf("%% Dia Err %0.1f (%0.1f)",mean(dat$dia_per)*100,sd(dat$dia_per)*100)
+ls[[7]] = sprintf("%% Vol Err %0.1f (%0.1f)",mean(dat$vol_per)*100,sd(dat$vol_per)*100)
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- ES")
+ls1[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat1$DSC)*100,sd(dat1$DSC)*100)
+ls1[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat1$s2s_dist),sd(dat1$s2s_dist))
+ls1[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat1$sty)*100,sd(dat1$sty)*100)
+ls1[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat1$spy)*100,sd(dat1$spy)*100)
+ls1[[6]] = sprintf("%% Dia Err %0.1f (%0.1f)",mean(dat1$dia_per)*100,sd(dat1$dia_per)*100)
+ls1[[7]] = sprintf("%% Vol Err %0.1f (%0.1f)",mean(dat1$vol_per)*100,sd(dat1$vol_per)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- ED")
+ls2[[2]] = sprintf("Dice %0.1f (%0.1f)",mean(dat2$DSC)*100,sd(dat2$DSC)*100)
+ls2[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat2$s2s_dist),sd(dat2$s2s_dist))
+ls2[[4]] = sprintf("Sensi %0.1f (%0.1f)",mean(dat2$sty)*100,sd(dat2$sty)*100)
+ls2[[5]] = sprintf("Speci %0.2f (%0.2f)",mean(dat2$spy)*100,sd(dat2$spy)*100)
+ls2[[6]] = sprintf("%% Dia Err %0.1f (%0.1f)",mean(dat2$dia_per)*100,sd(dat2$dia_per)*100)
+ls2[[7]] = sprintf("%% Vol Err %0.1f (%0.1f)",mean(dat2$vol_per)*100,sd(dat2$vol_per)*100)
+
+cat(paste(unlist(ls),collapse="\n"))
+cat(paste(unlist(ls1),collapse="\n"))
+cat(paste(unlist(ls2),collapse="\n"))
+```
+
+# LGE-MRI fibrosis evaluation
+```{r}
+setwd("C:/Users/zxio506/Desktop/UtahWaikato Test Set")
+#setwd("C:/Users/Administrator/Desktop")
+
+dat = read.csv("RAfibrosis.csv") # RAfibrosis.csv LAfibrosis.csv
+dat = cbind(patients,dat)
+
+# filter by waikato/utah
+dat = dat[grepl("0000",patients),]  # waikato
+#dat = dat[!grepl("0000",patients),] # utah
+
+# pre/post ablation
+dat1 = dat[grepl("pre",dat$patients),]
+dat2 = dat[!grepl("pre",dat$patients),]
+
+# Techinical Evals #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("KS Score %0.2f (%0.2f)",mean(dat$KS_d),sd(dat$KS_d))
+ls[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat$s2s_dist),sd(dat$s2s_dist))
+ls[[4]] = sprintf("True Fib%% %0.1f (%0.1f)",mean(dat$fib_true)*100,sd(dat$fib_true)*100)
+ls[[5]] = sprintf("Pred Fib%% %0.1f (%0.1f)",mean(dat$fib_pred)*100,sd(dat$fib_pred)*100)
+ls[[6]] = sprintf("Fib%% %0.1f (%0.1f)",mean(dat$fib_err),sd(dat$fib_err))
+ls[[7]] = sprintf("Dice %0.2f (%0.2f)",mean(dat$DSC)*100,sd(dat$DSC)*100)
+
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("KS Score %0.2f (%0.2f)",mean(dat1$KS_d),sd(dat1$KS_d))
+ls1[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat1$s2s_dist),sd(dat1$s2s_dist))
+ls1[[4]] = sprintf("True Fib%% %0.1f (%0.1f)",mean(dat1$fib_true)*100,sd(dat1$fib_true)*100)
+ls1[[5]] = sprintf("Pred Fib%% %0.1f (%0.1f)",mean(dat1$fib_pred)*100,sd(dat1$fib_pred)*100)
+ls1[[6]] = sprintf("Fib%% %0.1f (%0.1f)",mean(dat1$fib_err),sd(dat1$fib_err))
+ls1[[7]] = sprintf("Dice %0.2f (%0.2f)",mean(dat1$DSC)*100,sd(dat1$DSC)*100)
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("KS Score %0.2f (%0.2f)",mean(dat2$KS_d),sd(dat2$KS_d))
+ls2[[3]] = sprintf("STSD %0.2f (%0.2f)",mean(dat2$s2s_dist),sd(dat2$s2s_dist))
+ls2[[4]] = sprintf("True Fib%% %0.1f (%0.1f)",mean(dat2$fib_true)*100,sd(dat2$fib_true)*100)
+ls2[[5]] = sprintf("Pred Fib%% %0.1f (%0.1f)",mean(dat2$fib_pred)*100,sd(dat2$fib_pred)*100)
+ls2[[6]] = sprintf("Fib%% %0.1f (%0.1f)",mean(dat2$fib_err),sd(dat2$fib_err))
+ls2[[7]] = sprintf("Dice %0.2f (%0.2f)",mean(dat2$DSC)*100,sd(dat2$DSC)*100)
+
+print(unlist(ls))
+print(unlist(ls1))
+print(unlist(ls2))
+```
+
+# Waikato LGE-MRI Wall Thickness Evluation
+```{r}
+#setwd("C:/Users/zxio506/Desktop/UtahWaikato Test Set")
+setwd("C:/Users/86155/Desktop")
+
+dat = read.csv("RA_awt.csv") # LA_awt.csv RA_awt.csv
+dat = cbind(patients=patients[1:nrow(dat)],dat)
+
+# print averages
+colMeans(dat[2:ncol(dat)])
+
+# pre/post ablation
+dat1 = dat[grepl("pre",dat$patients),]
+dat2 = dat[!grepl("pre",dat$patients),]
+
+# Techinical Evals #############################################################################
+ls = list()
+ls[[1]] = sprintf("------------------------------------------------------- Overall")
+ls[[2]] = sprintf("MSE %0.2f (%0.2f)",mean(dat$MSE_masked),sd(dat$MSE_masked))
+ls[[4]] = sprintf("True AWT %0.1f (%0.1f)",mean(dat$awt_true_mean),sd(dat$awt_true_mean))
+ls[[5]] = sprintf("Pred AWT %0.1f (%0.1f)",mean(dat$awt_pred_mean),sd(dat$awt_pred_mean))
+ls[[6]] = sprintf("AWT Err%% %0.1f (%0.1f)",mean(dat$awt_err_per),sd(dat$awt_err_per))
+ls[[7]] = sprintf("Pixel-Wise Error %0.2f (%0.2f)",mean(dat$value_err),sd(dat$value_err))
+
+
+ls1 = list()
+ls1[[1]] = sprintf("------------------------------------------------------- Pre Ablation")
+ls1[[2]] = sprintf("MSE %0.2f (%0.2f)",mean(dat1$MSE_masked),sd(dat1$MSE_masked))
+ls1[[4]] = sprintf("True AWT %0.1f (%0.1f)",mean(dat1$awt_true_mean),sd(dat1$awt_true_mean))
+ls1[[5]] = sprintf("Pred AWT %0.1f (%0.1f)",mean(dat1$awt_pred_mean),sd(dat1$awt_pred_mean))
+ls1[[6]] = sprintf("AWT Err%% %0.1f (%0.1f)",mean(dat1$awt_err_per),sd(dat1$awt_err_per))
+ls1[[7]] = sprintf("Pixel-Wise Error %0.2f (%0.2f)",mean(dat1$value_err),sd(dat1$value_err))
+
+ls2 = list()
+ls2[[1]] = sprintf("------------------------------------------------------- Post Ablation")
+ls2[[2]] = sprintf("MSE %0.2f (%0.2f)",mean(dat2$MSE_masked),sd(dat2$MSE_masked))
+ls2[[4]] = sprintf("True AWT %0.1f (%0.1f)",mean(dat2$awt_true_mean),sd(dat2$awt_true_mean))
+ls2[[5]] = sprintf("Pred AWT %0.1f (%0.1f)",mean(dat2$awt_pred_mean),sd(dat2$awt_pred_mean))
+ls2[[6]] = sprintf("AWT Err%% %0.1f (%0.1f)",mean(dat2$awt_err_per),sd(dat2$awt_err_per))
+ls2[[7]] = sprintf("Pixel-Wise Error %0.2f (%0.2f)",mean(dat2$value_err),sd(dat2$value_err))
+
+print(unlist(ls))
+print(unlist(ls1))
+print(unlist(ls2))
+```

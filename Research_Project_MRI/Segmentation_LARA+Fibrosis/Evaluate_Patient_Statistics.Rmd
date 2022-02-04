@@ -1,0 +1,127 @@
+
+# Patient Biomarker Info
+```{r}
+rm(list=ls())
+library(ggplot2)
+library(gridExtra)
+
+df          = read.csv2("Utah Patient Demographic/utah_clinical_stats_RA.csv",sep=",",stringsAsFactors=FALSE)
+
+df$pat_ID   = gsub("CARMA","",unlist(strsplit(df$patient,"_"))[c(TRUE,FALSE)])
+df$pat_ID   = gsub("^0+","",df$pat_ID)
+df$ablation = unlist(strsplit(df$patient,"_"))[c(FALSE,TRUE)]
+df$prepost  = ifelse(df$ablation=="pre","pre","post")
+
+df$diameter = as.numeric(df$diameter)
+df$volume   = as.numeric(df$volume)
+df$fibrosis = as.numeric(df$fibrosis)
+
+success = read.csv2("Utah Patient Demographic/namic_recurrence_data.csv",sep=",",stringsAsFactors=FALSE)
+success$pre_dia  = NA
+success$post_dia = NA
+success$pre_vol  = NA
+success$post_vol = NA
+success$pre_fib  = NA
+success$post_fib = NA
+
+for (i in 1:nrow(success)) {
+  
+  if (sum(success$pat_ID[i] == df$pat_ID) > 0) {
+    
+    # pre-ablation values
+    pre_row = which(success$pat_ID[i] == df$pat_ID & df$ablation == "pre")
+    
+    success$pre_dia[i] = df$diameter[pre_row]
+    success$pre_vol[i] = df$volume[pre_row]
+    success$pre_fib[i] = df$fibrosis[pre_row]
+    
+    # post-ablation values
+    post_temp1 = which(success$pat_ID[i] == df$pat_ID & df$ablation != "pre")
+    post_temp2 = which.max(as.numeric(gsub("mo","",df$ablation[post_temp1])))
+    post_row   = post_temp1[post_temp2]
+    
+    success$post_dia[i] = df$diameter[post_row]
+    success$post_vol[i] = df$volume[post_row]
+    success$post_fib[i] = df$fibrosis[post_row]
+    
+  }
+  
+}
+
+success = success[!is.na(success$pre_dia),]
+success$recurrence = ifelse(success$recurrence==1,"yes","no")
+```
+
+# Barplot AF Recurrence and Pre/Post Ablation against diameter/prediction/fibrosis
+```{r}
+df_plot = data.frame(recurrence = rep(success$recurrence,2),
+                     ablation   = c(rep("pre",nrow(success)),rep("post",nrow(success))),
+                     diameter   = c(success$pre_dia,success$post_dia),
+                     volume     = c(success$pre_vol,success$post_vol),
+                     fibrosis   = c(success$pre_fib,success$post_fib)
+                     )
+
+p1 = ggplot(df_plot, aes(x=recurrence, y=diameter)) + geom_boxplot(aes(fill=ablation)) + ggtitle("Diameter")
+p2 = ggplot(df_plot, aes(x=recurrence, y=volume))   + geom_boxplot(aes(fill=ablation)) + ggtitle("Volume")
+p3 = ggplot(df_plot, aes(x=recurrence, y=fibrosis)) + geom_boxplot(aes(fill=ablation)) + ggtitle("Fibrosis")
+
+grid.arrange(p1,p2,p3,ncol=3,widths=c(1,1,1),as.table=FALSE)
+```
+
+
+# Barplot AF Recurrence or not
+```{r}
+p1 = ggplot(df,      aes(x=prepost,y=fibrosis,group=prepost))      + geom_boxplot(aes(fill=prepost))
+p2 = ggplot(success, aes(x=recurrence,y=pre_fib,group=recurrence)) + geom_boxplot(aes(fill=recurrence))
+
+t.test(success$pre_fib[success$recurrence=="no"],success$pre_fib[success$recurrence=="yes"])
+
+grid.arrange(p1,p2,ncol=2,widths=c(1,1),as.table=FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# LGE-MRI Predicted Biometric Summaries
+```{r}
+rm(list=ls())
+
+patients = c("1364 3mo","1364 pre","1387 4mo","1387 8mo","1387 pre","1398 3mo","1398 7mo","1398 pre","1399 3mo","1399 pre","1401 3mo","1401 pre","1404 3mo","1404 pre","1421 4mo","1421 pre",
+"1432 3mo","1432 pre","1460 3mo","1460 pre","1462 3mo","1462 pre","1467 4mo","1467 pre","1500 4mo","1500 pre","1504 4mo","1504 pre","1522 3mo","1522 pre")
+
+dat = read.csv("C:/Users/Administrator/Desktop/UtahWaikato Test Set/LAendo.csv")
+dat = cbind(patients,dat[8:nrow(dat),])
+
+success = read.csv2("Utah Patient Demographic/namic_recurrence_data.csv",sep=",",stringsAsFactors=FALSE)
+success$pre_dia=NA;success$post_dia=NA;success$pre_vol=NA;success$post_vol=NA
+
+pat_ID   = as.numeric(unlist(strsplit(patients," "))[c(TRUE,FALSE)])
+ablation = unlist(strsplit(patients," "))[c(FALSE,TRUE)]
+
+for (i in 1:nrow(success)) {
+  
+  if (sum(success$pat_ID[i] == pat_ID) > 0) {
+    pre_row = which(success$pat_ID[i] == pat_ID & ablation == "pre")
+    success$pre_dia[i] = dat$pred_dia[pre_row]
+    success$pre_vol[i] = dat$pred_vol[pre_row]/1e3
+    
+    post_temp1 = which(success$pat_ID[i] == pat_ID & ablation != "pre")
+    post_temp2 = which.max(as.numeric(gsub("mo","",ablation[post_temp1])))
+    success$post_dia[i] = dat$pred_dia[post_temp1[post_temp2]]
+    success$post_vol[i] = dat$pred_vol[post_temp1[post_temp2]]/1e3
+  }
+  
+}
+
+success = success[!is.na(success$pre_dia),]
+```
+

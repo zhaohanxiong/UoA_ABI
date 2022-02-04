@@ -1,0 +1,78 @@
+
+```{r}
+rm(list=ls())
+
+library("car")
+library("R.matlab")
+library("alphashape3d")
+
+setwd("C:/Users/zxio506/Desktop/Atria_Data/CatheterPath/2020_Melbourne_PointCloud/Export_PVI-12_06_2020-14-36-55")
+```
+
+# Setup and Helper Functions
+```{r}
+# define files
+#f1    = c("1-2-1-ReSRch.mesh", "6-RAch.mesh")
+f_xml = "PVI 11_27_2020 16-11-08.xml"
+#f2    = c("-ReSRch", "-RAch")
+
+
+
+for (i in 1:length(f1)) {
+  
+  # ----------------------------------------------------------------------------------------------------- CT
+  txt = readLines(f1[i])
+
+  ind1 = grep("VerticesSection",  txt) + 1
+  ind2 = grep("TrianglesSection", txt) - 2
+  
+  txt = txt[ind1:ind2]
+  
+  txt = gsub("\\=","",txt)
+  txt = gsub("\\s+"," ",txt)
+  txt = gsub("^\\s+|\\s+$","",txt)
+  
+  txt = txt[txt!=""]
+  
+  dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                          byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+  colnames(dat) = strsplit(txt[1]," ")[[1]]
+
+  dat = dat[,c("X","Y","Z")]
+
+  ashape      = ashape3d(as.matrix(dat), alpha = 3, pert = TRUE)
+  ashape_vert = ashape$x
+  ashape_tri  = ashape$triang[,c(1:3,9)]
+  ashape_tri  = ashape_tri[ashape_tri[,4]>=2,1:3]
+  
+  # ------------------------------------------------------------------------------------------------- OUTPUT
+  writeMat(paste0("Mesh ",gsub(".mesh","",f1[i]),".mat")
+           ,coord      = as.matrix(dat)  # Vertices produced (3D point cloud mesh) by CARTO Software
+           ,ashape_x   = ashape_vert     # vertices of the concave hull computed
+           ,ashape_tri = ashape_tri      # triangles of the mesh representing the concave hull
+  )
+  
+  # --------------------------------------------------------------------------------------------------- PATH
+  txt = readLines(f_xml)
+
+  ind1 = grep(paste0(f2[i],'" Index='),txt)[1]
+  ind2 = grep('</Map>',txt[ind1:length(txt)])[1] + ind1
+  
+  txt = txt[ind1:ind2]
+  
+  txt = txt[grepl("CathOrientation",txt)]
+  txt = sapply(txt, function(x)
+                substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+  names(txt) = NULL
+  txt = gsub("\\s+"," ",txt)
+  txt = gsub("^\\s+|\\s+$","",txt)
+  
+  dat = data.frame(matrix(as.numeric(unlist(strsplit(txt," "))), byrow=TRUE, ncol=3))
+    
+  # ------------------------------------------------------------------------------------------------- OUTPUT
+  writeMat(paste0("Path ",gsub(".mesh","",f1[i]),".mat")
+           ,coord = as.matrix(dat)  # Vertices produced (3D point cloud mesh) by CARTO Software
+  )
+
+}
+```

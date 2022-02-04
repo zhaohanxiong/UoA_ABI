@@ -1,0 +1,27 @@
+
+
+3D visualization of masks/labels/predictions
+
+- drag image sequence into amira
+- go to 3rd tab for segmentation
+- select image sequence to create a AMIRA label
+- click new
+- go to bottom on 5th tab for thresholding
+- click select
+- click the plus sign in red above (now the label is created)
+
+- right click -> compute -> surface gen
+- click apply at the bottom (surface is now generated)
+- right click on surface generate -> display -> surface view
+- settings: shaded, color normal, more option fancy alpha
+
+
+3D distance visualization between two masks/labels
+
+- create surface for both masks/labels
+- right click -> compute -> surface distance
+- right click on white square on surface distance -> click surface 2
+- tick distance for output
+- click apply (distance is now generated in 3D)
+- right click -> display -> surface view
+- use seismic/volrenGreen color map ad adjust limits to max/min distances

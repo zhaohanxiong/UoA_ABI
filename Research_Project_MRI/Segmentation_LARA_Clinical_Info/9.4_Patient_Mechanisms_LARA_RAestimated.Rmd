@@ -1,0 +1,261 @@
+
+# Read Data, Keep Ones with RA Info
+```{r}
+rm(list=ls())
+
+library(ggplot2)
+library(gridExtra)
+library(survival)
+library(survminer)
+
+df = read.csv2("utah_mechanism_LARA_RA-0400-to-1083-estimated.csv",sep=",",stringsAsFactors=FALSE)
+
+df$LA_diameter = as.numeric(df$LA_diameter)
+df$LA_volume   = as.numeric(df$LA_volume)
+df$LA_fibrosis = as.numeric(df$LA_fibrosis)
+df$LA_sphericity = as.numeric(df$LA_sphericity)
+
+df$RA_diameter = as.numeric(df$RA_diameter)
+df$RA_volume   = as.numeric(df$RA_volume)
+df$RA_fibrosis = as.numeric(df$RA_fibrosis)
+df$RA_sphericity = as.numeric(df$RA_sphericity)
+
+df$prepost    = factor(df$prepost)
+df$recurrence = factor(df$recurrence)
+
+df$ablation[df$ablation == "pre"] = "0mo"
+
+# -------------------------------------------------------------------------------------
+# Keep Utah LA (N = 154)
+df_lara = df[grepl("CARMA",df$patient),]
+
+# Keep Waikato
+df_waik = df[grepl("W",df$patient),]
+```
+
+# LA Plot (Diameter/Volume/Fibrosis)
+```{r}
+p1 = ggplot(df_lara, aes(x=recurrence, y=LA_diameter)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Diameter")
+p2 = ggplot(df_lara, aes(x=recurrence, y=LA_volume))   + geom_boxplot(aes(fill=prepost)) + ggtitle("Volume")
+p3 = ggplot(df_lara, aes(x=recurrence, y=LA_fibrosis)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Fibrosis")
+p4 = ggplot(df_lara, aes(x=recurrence, y=LA_sphericity)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Sphericity")
+
+grid.arrange(p1,p2,p3,p4,ncol=4,widths=c(1,1,1,1),as.table=FALSE)
+```
+
+# RA Plot (Diameter/Volume/Fibrosis)
+```{r}
+p1 = ggplot(df_lara, aes(x=recurrence, y=RA_diameter)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Diameter")
+p2 = ggplot(df_lara, aes(x=recurrence, y=RA_volume))   + geom_boxplot(aes(fill=prepost)) + ggtitle("Volume")
+p3 = ggplot(df_lara, aes(x=recurrence, y=RA_fibrosis)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Fibrosis")
+p4 = ggplot(df_lara, aes(x=recurrence, y=RA_sphericity)) + geom_boxplot(aes(fill=prepost)) + ggtitle("Sphericity")
+
+grid.arrange(p1,p2,p3,p4,ncol=4,widths=c(1,1,1,1),as.table=FALSE)
+```
+
+# Convert to Wide Format
+```{r}
+# dataframe containing which time frame ablation status were recorded for each patient
+df_pat_abl           = data.frame(matrix(nrow=60,ncol=length(unique(df_lara$ablation))+1))
+colnames(df_pat_abl) = c("pat_ID",unique(df_lara$ablation)[order(as.numeric(gsub("mo","",unique(df_lara$ablation))))])
+df_pat_abl$pat_ID    = unique(df_lara$pat_ID)
+
+# dataframe getting pre/most recent post ablation
+df_wide           = data.frame(matrix(nrow=60,ncol=18))
+colnames(df_wide) = c("pat_ID","LA_pre_dia","LA_post_dia","LA_pre_vol","LA_post_vol","LA_pre_fib","LA_post_fib","LA_pre_sph","LA_post_sph",
+                               "RA_pre_dia","RA_post_dia","RA_pre_vol","RA_post_vol","RA_pre_fib","RA_post_fib","RA_pre_sph","RA_post_sph","recurrence")
+df_wide$pat_ID    = unique(df_lara$pat_ID)
+
+# fill data frames
+for (i in 1:nrow(df_pat_abl)) {
+  
+  df_pat = df_lara[df_lara$pat_ID == df_pat_abl$pat_ID[i],]
+  abl_mo = df_pat$ablation[order(as.numeric(gsub("mo","",df_pat$ablation)))]
+  
+  df_pat_abl[i, abl_mo] = 1
+  
+  # LA Info
+  df_wide$LA_pre_dia[i]  = df_pat[df_pat$ablation == abl_mo[1],]$LA_diameter
+  df_wide$LA_pre_vol[i]  = df_pat[df_pat$ablation == abl_mo[1],]$LA_volume
+  df_wide$LA_pre_fib[i]  = df_pat[df_pat$ablation == abl_mo[1],]$LA_fibrosis
+  df_wide$LA_pre_sph[i]  = df_pat[df_pat$ablation == abl_mo[1],]$LA_sphericity
+  
+  df_wide$LA_post_dia[i] = df_pat[df_pat$ablation == abl_mo[2],]$LA_diameter
+  df_wide$LA_post_vol[i] = df_pat[df_pat$ablation == abl_mo[2],]$LA_volume
+  df_wide$LA_post_fib[i] = df_pat[df_pat$ablation == abl_mo[2],]$LA_fibrosis
+  df_wide$LA_post_sph[i] = df_pat[df_pat$ablation == abl_mo[2],]$LA_sphericity
+  
+  # RA Info
+  df_wide$RA_pre_dia[i]  = df_pat[df_pat$ablation == abl_mo[1],]$RA_diameter
+  df_wide$RA_pre_vol[i]  = df_pat[df_pat$ablation == abl_mo[1],]$RA_volume
+  df_wide$RA_pre_fib[i]  = df_pat[df_pat$ablation == abl_mo[1],]$RA_fibrosis
+  df_wide$RA_pre_sph[i]  = df_pat[df_pat$ablation == abl_mo[1],]$RA_sphericity
+  
+  df_wide$RA_post_dia[i] = df_pat[df_pat$ablation == abl_mo[2],]$RA_diameter
+  df_wide$RA_post_vol[i] = df_pat[df_pat$ablation == abl_mo[2],]$RA_volume
+  df_wide$RA_post_fib[i] = df_pat[df_pat$ablation == abl_mo[2],]$RA_fibrosis
+  df_wide$RA_post_sph[i] = df_pat[df_pat$ablation == abl_mo[2],]$RA_sphericity
+  
+  df_wide$recurrence[i] = as.character(df_pat$recurrence[1])
+  
+}
+
+df_wide$recurrence    = as.factor(df_wide$recurrence)
+df_pat_abl$recurrence = df_wide$recurrence
+```
+
+# Add Age and Gender to Wide Data Frame
+```{r}
+# load age/gender data
+df_agesex = read.csv2("Longitudinal_Data.csv",sep=",",stringsAsFactors=FALSE)
+df_agesex = df_agesex[grepl("CARMA",df_agesex$ID),]
+df_agesex$pat_ID = as.numeric(gsub("CARMA","",df_agesex$ID))
+
+# add age/gender to wide data frame
+df_wide$age = NA
+df_wide$sex = NA
+
+for (i in 1:nrow(df_wide)) {
+  df_wide$age[i] = as.numeric(df_agesex$Age.at.First.Ablation[df_wide$pat_ID[i] == df_agesex$pat_ID])
+  df_wide$sex[i] = df_agesex$Gender[df_wide$pat_ID[i] == df_agesex$pat_ID]
+}
+```
+
+# Risk Model
+```{r}
+# hazard ratio is to do with time-series survival analysis
+# relative risk only cares about occurence at the end of the study, and not its progression
+#     https://rviews.rstudio.com/2017/09/25/survival-analysis-with-r/
+#     https://www.datacamp.com/community/tutorials/survival-analysis-R
+
+# subset dataset for analysis
+df_HR = df_wide[,c("pat_ID","sex","age",
+                   "LA_pre_dia","LA_pre_vol","RA_pre_dia","RA_pre_vol","LA_pre_fib","RA_pre_fib","LA_pre_sph","RA_pre_sph",
+                   "recurrence")]
+
+# normalize data, turn into categorical
+df_HR$recurrence = ifelse(as.numeric(as.character(df_HR$recurrence))==0,1e10,365)
+
+df_HR$sex = factor(df_HR$sex,levels=c("Male","Female"))
+
+df_HR$age = ifelse(df_HR$age<70,"<70",">=70") # 39.5 to 91.6
+
+df_HR$LA_pre_dia = ifelse(df_HR$LA_pre_dia<42,"<42mm",">=42mm")    # 27.5 to 63.8
+df_HR$LA_pre_vol = ifelse(df_HR$LA_pre_vol<109,"<109ml",">=109ml") # 44.4 to 252.4
+df_HR$LA_pre_fib = ifelse(df_HR$LA_pre_fib<23,"<23%",">=23%")      # 10.8 to 33.7
+df_HR$LA_pre_sph = ifelse(df_HR$LA_pre_sph<81,"<81%",">=81%")      # 64.7 to 93.3
+
+df_HR$RA_pre_dia = ifelse(df_HR$RA_pre_dia<54,"<54mm",">=54mm") # 37.5 to 75.0
+df_HR$RA_pre_vol = ifelse(df_HR$RA_pre_vol<95,"<95ml",">=95ml") # 45.4 to 205.6
+df_HR$RA_pre_fib = ifelse(df_HR$RA_pre_fib<25,"<25%",">=25%")   # 10.5 to 37.3
+df_HR$RA_pre_sph = ifelse(df_HR$RA_pre_sph<87,"<87%",">=87%")   # 42.4 to 104.1
+
+# compute survival model and cox-proportional hazard model
+surv_obj  = Surv(time = df_HR$recurrence, event = rep(1,nrow(df_HR)))
+fit.coxph = coxph(surv_obj ~ sex + age
+                            + LA_pre_dia + LA_pre_vol + LA_pre_sph #+ LA_pre_fib
+                            + RA_pre_dia + RA_pre_vol + RA_pre_sph #+ RA_pre_fib 
+                  ,data = df_HR)
+
+# view results
+ggforest(fit.coxph, data = df_HR)
+```
+
+# Risk Model Multi-Class
+```{r}
+# subset dataset for analysis
+df_HR = df_wide[,c("pat_ID","sex","age",
+                   "LA_pre_dia","LA_pre_vol","RA_pre_dia","RA_pre_vol","LA_pre_fib","RA_pre_fib",
+                   "recurrence")]
+
+# normalize data, turn into categorical
+df_HR$recurrence = ifelse(as.numeric(as.character(df_HR$recurrence))==0,1e10,365)
+
+df_HR$sex = factor(df_HR$sex,levels=c("Male","Female"))
+
+df_HR$age = ifelse(df_HR$age<70,"<70",">=70")
+
+# Combine LA and RA diameter / LA and RA volume
+if (TRUE) {
+
+  df_HR$LARA_dia = NA
+  df_HR$LARA_vol = NA
+  for (i in 1:nrow(df_HR)) {
+    
+    if (df_HR$LA_pre_dia[i] < 42 & df_HR$RA_pre_dia[i] < 54) {
+      df_HR$LARA_dia[i] = "LA<RA<"
+    } else if (df_HR$LA_pre_dia[i] >= 42 & df_HR$RA_pre_dia[i] < 54) {
+      df_HR$LARA_dia[i] = "LA>RA<"
+    } else if (df_HR$LA_pre_dia[i] < 42 & df_HR$RA_pre_dia[i] >= 54) {
+      df_HR$LARA_dia[i] = "LA<RA>"
+    } else if (df_HR$LA_pre_dia[i] >= 42 & df_HR$RA_pre_dia[i] >= 54) {
+      df_HR$LARA_dia[i] = "LA>RA>"
+    }
+    
+    if (df_HR$LA_pre_vol[i] < 109 & df_HR$RA_pre_vol[i] < 95) {
+      df_HR$LARA_vol[i] = "LA<RA<"
+    } else if (df_HR$LA_pre_vol[i] >= 109 & df_HR$RA_pre_vol[i] < 95) {
+      df_HR$LARA_vol[i] = "LA>RA<"
+    } else if (df_HR$LA_pre_vol[i] < 109 & df_HR$RA_pre_vol[i] >= 95) {
+      df_HR$LARA_vol[i] = "LA<RA>"
+    } else if (df_HR$LA_pre_vol[i] >= 109 & df_HR$RA_pre_vol[i] >= 95) {
+      df_HR$LARA_vol[i] = "LA>RA>"
+    }
+    
+  }
+  
+}
+
+# Combinining LA diameter and volume / Ra diameter and volume
+if (FALSE) {
+
+  df_HR$LA_diavol = NA
+  df_HR$RA_diavol = NA
+  for (i in 1:nrow(df_HR)) {
+    
+    if (df_HR$LA_pre_dia[i] < 42 & df_HR$LA_pre_vol[i] < 109) {
+      df_HR$LA_diavol[i] = "LA_dia<vol<"
+    } else if (df_HR$LA_pre_dia[i] >= 42 & df_HR$LA_pre_vol[i] < 109) {
+      df_HR$LA_diavol[i] = "LA_dia>vol<"
+    } else if (df_HR$LA_pre_dia[i] < 42 & df_HR$LA_pre_vol[i] >= 109) {
+      df_HR$LA_diavol[i] = "LA_dia<vol>"
+    } else if (df_HR$LA_pre_dia[i] >= 42 & df_HR$LA_pre_vol[i] >= 109) {
+      df_HR$LA_diavol[i] = "LA_dia>vol>"
+    }
+    
+    if (df_HR$RA_pre_dia[i] < 54 & df_HR$RA_pre_vol[i] < 95) {
+      df_HR$RA_diavol[i] = "RA_dia<vol<"
+    } else if (df_HR$RA_pre_dia[i] >= 54 & df_HR$RA_pre_vol[i] < 95) {
+      df_HR$RA_diavol[i] = "RA_dia>vol<"
+    } else if (df_HR$RA_pre_dia[i] < 54 & df_HR$RA_pre_vol[i] >= 95) {
+      df_HR$RA_diavol[i] = "RA_dia<vol>"
+    } else if (df_HR$RA_pre_dia[i] >= 54 & df_HR$RA_pre_vol[i] >= 95) {
+      df_HR$RA_diavol[i] = "RA_dia>vol>"
+    }
+    
+  }
+
+}
+
+# compute survival model and cox-proportional hazard model
+surv_obj  = Surv(time = df_HR$recurrence, event = rep(1,nrow(df_HR)))
+fit.coxph = coxph(surv_obj ~ sex + age
+                            #+ LA_pre_dia + LA_pre_vol #+ LA_pre_fib
+                            #+ RA_pre_dia + RA_pre_vol #+ RA_pre_fib
+                            + LARA_vol #+ LARA_dia
+                            #+ LA_diavol + RA_diavol
+                  ,data = df_HR)
+
+# view results
+ggforest(fit.coxph, data = df_HR)
+```
+
+
+
+
+
+
+
+
+
+

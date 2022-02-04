@@ -1,0 +1,177 @@
+
+
+
+# Main Script (NEW)
+```{r}
+library(tm)           # Text mining 
+library(SnowballC)    # porters algorithm for stemming
+library(RTextTools)    # This package is for supervised text learning
+
+#####  Data mining
+extract_PubMed_Text = function(filename){
+  
+  paper_data = unlist(strsplit(paste(readLines(   paste0(getwd(), "/",filename)   ), collapse = " "), "PMID-"))[-1]
+  
+  title_info_filtered = gsub("\\s+\\s", "", gsub("AB  -.+$", "", gsub("LID -.+$", "", gsub("PG  -.+$", "", gsub("^.+TI  -", "", paper_data)))))
+  
+  abstract_info_filtered = gsub("\\s+\\s", "", gsub("LA  -.+$", "", gsub("CN  -.+$", "", gsub("FAU -.+$", "",  gsub("CI  -.+$", "", gsub("^.+AB  -", "", paper_data))))))
+  
+  Tags = rep(0, length(abstract_info_filtered))
+  database = data.frame(cbind(title_info_filtered, abstract_info_filtered, Tags), stringsAsFactors = FALSE)
+  colnames(database) = c("Title", "Abstract", "Tag")
+  
+  return(database)
+}
+
+#####  Feature extraction
+create_DMT = function(data){
+  corpus = Corpus(VectorSource(data[, 2]))
+  corpus = tm_map(corpus, content_transformer(tolower))       # Convert all words to lower case
+  corpus = tm_map(corpus, removeNumbers)                      # Remove numbers
+  corpus = tm_map(corpus, removePunctuation)                  # Remove puncuation
+  corpus = tm_map(corpus, stripWhitespace)                    # Collapse multiple white space into a single space
+  corpus = tm_map(corpus, removeWords, stopwords('english'))  # Remove the stop words
+  corpus = tm_map(corpus, stemDocument)                       # Get the stem words
+  return(DocumentTermMatrix(corpus))
+}
+
+##### Pre Processing (seeing which data is new)
+temp = function(){
+  data_old = extract_PubMed_Text("pubmed_result NEW.txt")
+  data_new = extract_PubMed_Text("pubmed_result OLD.txt")
+  
+  Tag = c()
+  for(j in 1:nrow(data_new)){
+    if(any(grepl( substring(data_new$Title[j],3,nchar(data_new$Title[j])-1) , data_old$Title,ignore.case=TRUE))){
+      Tag = c(Tag,"old")
+    } else{
+      Tag = c(Tag,"new")
+    }
+  }
+  table(Tag)
+  write.csv(cbind(data_new,Tag), sprintf("FINAL ALL data.csv"))
+}
+
+##### Helper function for clustering
+norm_eucl = function(m) m/apply(m, 1, function(x) sum(x^2)^.5)
+```
+
+Title only 139 ---> https://www.ncbi.nlm.nih.gov/pubmed/?term=((((diabetes%5BTitle%5D+OR+diabetic%5BTitle%5D))+AND+atrial+fibrillation%5BTitle%5D))
+
+ALL 4172 ---> https://www.ncbi.nlm.nih.gov/pubmed?term=((((diabetes%20OR%20diabetic))%20AND%20atrial%20fibrillation))
+
+### Clustering
+```{r}
+data = as.data.frame(read.csv("ALL data.csv", header= TRUE, stringsAsFactors =  FALSE)[2:5])
+
+iteration_cluster_size = 250;       max_cluster_size = 1000000;     iter = 1
+
+while(max_cluster_size > iteration_cluster_size){
+  
+  Result_kmeans = kmeans(norm_eucl(as.matrix(weightTfIdf(create_DMT(data[1:2])))), centers = 3) ### # <--------- change centre here
+  
+  max_cluster_size = max(as.numeric(Result_kmeans$size))
+  smallest_cluster_index = (Result_kmeans$cluster == which.min(Result_kmeans$size))
+  
+  write.csv(data[which(smallest_cluster_index == TRUE), ], sprintf("cluster/Cluster %i.csv",iter) )
+  data = data[-which(smallest_cluster_index == TRUE), ]
+  
+  iter = iter + 1
+  
+  print(sort(Result_kmeans$size));print(nrow(data))
+}
+
+write.csv(data, sprintf("cluster/Cluster %i.csv",iter) ) # output the last cluster
+```
+
+### Classification
+```{r}
+#####  Classification
+training = data.frame(read.csv("Training Data.csv", header= TRUE, stringsAsFactors =  FALSE)[1:3])
+colnames(training) = c("Title", "Abstract", "Tag"); rownames(training) = NULL
+
+training$Title = iconv(training$Title,"WINDOWS-1252","UTF-8")
+training$Abstract = iconv(training$Abstract,"WINDOWS-1252","UTF-8")
+levels(training$Tag) = c("yes","no") # <--------- change the number of classes here
+
+train_size = nrow(training)
+
+iter = length(dir("cluster"))
+
+for(i in 1:iter){
+  
+  test_input_file = sprintf("cluster/Cluster %i.csv",i)
+  testing = data.frame(read.csv(test_input_file, header= TRUE, stringsAsFactors =  FALSE)[2:4])
+  levels(testing$Tag) = c("yes","no")
+  
+  data = suppressWarnings(rbind(training, testing))
+  
+  runs = c()
+  for(count in 1:10){
+    container = create_container(create_DMT(data), training$Tag, trainSize = 1:train_size, testSize = (train_size+1):nrow(data), virgin = FALSE)
+    model = train_model(container, algorithm = c("MAXENT")) # <--------- change model here
+    results = classify_model(container, model)
+    runs[[count]] = as.character(results[,1])
+    print(sprintf("%i-%i", i, count))
+  }
+  
+  testing$Tag = apply(do.call(cbind, runs), 1, function(x) names(which.max(table(x))))
+  write.csv(testing, sprintf("cluster/Classified - Cluster %i.csv",i))
+  
+}
+```
+
+### Visualisation
+```{r}
+c(2 4 10 23 31   8 13 20)
+f = function(i){
+  data_temp = as.data.frame(read.csv(sprintf("cluster/Classified - Cluster %i.csv",i), header= TRUE, stringsAsFactors =  FALSE))
+  data_temp = rbind(data_temp,c(000,"The natural history of AF incidence risk facts and prognosis in the manitoba follow up study","","yes"))
+  data_temp = rbind(data_temp,c(000,"Overweight and Obesity as Risk Factors for Atrial","","yes"))
+  data_temp = rbind(data_temp,c(000,"Big men and atrial fibrillation effects of body size and weight gain on risk of atrial fibrillation in men.","","yes"))
+  data_temp = rbind(data_temp,c(000,"Atrial fibrillation in New Zealand primary care: prevalence, risk factors for stroke and the management of thromboembolic risk","","yes"))
+  data_temp = rbind(data_temp,c(000,"Incidence of chronic AF in general practice and its treatment pattern","","yes"))
+  
+  data_temp = rbind(data_temp,c(000," The link between diabetes and atrial fibrillation: cause or correlation?","","yes"))
+  data_temp = rbind(data_temp,c(000," Impact of intensive glycemic control on the incidence of atrial fibrillation andassociated cardiovascular outcomes in patients with type 2 diabetes mellitus(from the Action to Control Cardiovascular Risk in Diabetes Study). ","","yes"))
+  
+  write.csv(data_temp, sprintf("cluster/Classified - Cluster %i.csv",i))
+}
+```
+
+```{r}
+data_meta_analysis = unique(read.csv("data for search.csv", stringsAsFactors =  FALSE)$Title)
+data_meta_analysis = as.character(data_meta_analysis)
+
+iter = length(dir("cluster"))/2
+
+ratios = c()
+counts = rep(0,iter)                                # counts which clusters have which paper
+
+for(i in 1:iter){
+
+  data_temp = read.csv(sprintf("cluster/Classified - Cluster %i.csv",i), header= TRUE, stringsAsFactors =  FALSE)
+  
+  data_tags = data_temp$Tag
+  data_tags = factor(data_tags)
+  ratios = cbind(ratios,table(data_tags))
+  
+  for(j in 1:length(data_meta_analysis)){
+    if(any(grepl(data_meta_analysis[j], data_temp$Title,ignore.case=TRUE))){
+      counts[i] = counts[i] + 1
+      print(sprintf("cluster %i - data %i",i ,j))
+      if(i != 6){
+        print(data_meta_analysis[j])
+      }
+    }
+    
+  }
+  
+}
+names(counts)=1:iter;c(counts,sum(counts));
+
+ratios = sweep(ratios,2,colSums(ratios),`/`)
+colnames(ratios) = seq(1,iter)
+
+barplot(ratios[2,],main="Cluster Similarity",ylab="Similarity",xlab="Cluster",col=c("gray80"),ylim=c(0,1))
+```

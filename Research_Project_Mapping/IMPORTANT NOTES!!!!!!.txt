@@ -1,0 +1,10 @@
+For Waikato (CARTO MESH + LGE-MRI for same patient):
+	- project catheter path points only if they are on the outside, and project to the surface
+	  of the LGE-MRI manual segmentation
+	- this only works because the CARTO mesh and the LGE-MRI segmentation are very close, so the
+	  resultant projection is very accuracy
+	  
+
+For Beijing + Utah (Beijing ensite mesh + Utah LGE-MRI with different patients):
+	- only project onto the surface of the manual segmentation as the geometries are very different
+	- this will be the only way to produce faily accurate paths

@@ -1,0 +1,129 @@
+
+# Setup and Helper Functions
+```{r}
+setwd("C:/Users/zxio506/Desktop/Atria_Data/CatheterPath/2020_Waikato_PointCloud")
+#setwd("C:/Users/Administrator/Desktop/2020_Waikato/2020_Waikato_PointCloud")
+
+# load packages
+rm(list=ls())
+library("R.matlab")
+library("alphashape3d")
+```
+
+# Patient Data
+```{r}
+# waikato Data patient files
+waikato_patients = c("Patient_0002-Richmond_Michelle",  # 1
+                     "Patient_0003-DEEGAN-Janet",       # 2
+                     "Patient_0004-CRAIG_Leslie",       # 3
+                     "Patient_0005-SIMON_Barry",        # 4
+                     "Patient_0006-CRONIN_Paul",        # 5
+                     "Patient_00011-WATKINS_Catheryn"   # 6
+                     ) 
+
+for (n_read in 1:length(waikato_patients)) {
+  
+  # create paths
+  f = waikato_patients[n_read]
+  
+  # ---------------- CARTO MESH
+  # read the text file and simplify the vector for the mesh
+  txt = readLines(paste0(f,"/","LA.mesh"))
+  txt = gsub("\\=","",txt)                 # remove equals signs
+  txt = gsub("\\s+"," ",txt)               # remove space
+  txt = gsub("^\\s+|\\s+$","",txt)         # remove leading/trailing space
+  
+  # convert to data frame
+  dat           = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))), byrow=TRUE, ncol=8))
+  colnames(dat) = strsplit(txt[1]," ")[[1]]
+  dat           = dat[,2:ncol(dat)]
+  
+  # extract alpha shape (concave hull)
+  coords = dat[,c("X","Y","Z")]
+  ashape = ashape3d(as.matrix(coords), alpha = 2, pert = TRUE) # plot(ashape)
+  
+  # save the concave hull attributes
+  ashape_vert = ashape$x
+  ashape_tri  = ashape$triang[,c(1:3,9)]
+  ashape_tri  = ashape_tri[ashape_tri[,4]>=2,1:3]
+  
+  # ----------------- CARTO VOLTAGES
+  # read the text file and simplify the vector for the mesh
+  txt = readLines(paste0(f,"/","voltage.mesh"))
+  txt = gsub("\\=","",txt)                 # remove equals signs
+  txt = gsub("\\s+"," ",txt)               # remove space
+  txt = gsub("^\\s+|\\s+$","",txt)         # remove leading/trailing space
+  
+  # convert to data frame
+  volt           = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))), byrow=TRUE, ncol=13))
+  colnames(volt) = strsplit(txt[1]," ")[[1]]
+  volt           = volt[,2:3]
+
+  # ----------------- CARTO PATH
+  # read the text file and simplify for the catheter path
+  txt = readLines(paste0(f,"/","path.xml"))
+  txt = txt[grep('-LA" Index=',txt)[1]:length(txt)]
+  txt = txt[grepl("CathOrientation",txt)]
+  txt = sapply(txt, function(x) substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+  names(txt) = NULL
+  txt = gsub("\\s+"," ",txt)
+  txt = gsub("^\\s+|\\s+$","",txt)
+  
+  # convert to dataframe
+  path           = data.frame(matrix(as.numeric(unlist(strsplit(txt," "))), byrow=TRUE, ncol=3))
+  colnames(path) = c("X","Y","Z")
+  
+  # compute distance
+  dist = sapply(1:nrow(path),function(i)
+       min(((path$X[i] - coords$X)^2 + (path$Y[i] - coords$Y)^2 + (path$Z[i] - coords$Z)^2)^0.5))
+  
+  # save raw data to file
+  writeMat(paste0(waikato_patients[n_read],"/catheter.mat")
+           ,coord      = as.matrix(coords)  # Vertices produced (3D point cloud mesh) by CARTO Software
+           ,ashape_x   = ashape_vert        # vertices of the concave hull computed
+           ,ashape_tri = ashape_tri         # triangles of the mesh representing the concave hull
+           ,path       = as.matrix(path)    # path of cathether
+           ,pathdist   = dist               # distance of catheter points with the mesh
+           ,bivolt     = volt$Bipolar       # voltage values corresponding to mesh
+           ,univolt    = volt$Unipolar      # voltage values corresponding to mesh
+  )
+  
+}
+```
+
+
+
+
+
+# Temp CT Data
+```{r}
+setwd("C:/Users/zxio506/Desktop")
+
+# read text file
+txt = readLines("1-CTI.mesh")
+txt = gsub("\\=","",txt)                 # remove equals signs
+txt = gsub("\\s+"," ",txt)               # remove space
+txt = gsub("^\\s+|\\s+$","",txt)         # remove leading/trailing space
+
+# convert to data frame
+dat           = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))), byrow=TRUE, ncol=8))
+colnames(dat) = strsplit(txt[1]," ")[[1]]
+dat           = dat[,2:ncol(dat)]
+
+# extract alpha shape (concave hull)
+coords = dat[,c("X","Y","Z")]
+ashape = ashape3d(as.matrix(coords), alpha = 2, pert = TRUE) # plot(ashape)
+
+# save the concave hull attributes
+ashape_vert = ashape$x
+ashape_tri  = ashape$triang[,c(1:3,9)]
+ashape_tri  = ashape_tri[ashape_tri[,4]>=2,1:3]
+
+# save raw data to file
+writeMat("CT.mat"
+         ,CT_coord      = as.matrix(coords)  # Vertices produced (3D point cloud mesh) by CARTO Software
+         ,CT_ashape_x   = ashape_vert        # vertices of the concave hull computed
+         ,CT_ashape_tri = ashape_tri         # triangles of the mesh representing the concave hull
+)
+```
+

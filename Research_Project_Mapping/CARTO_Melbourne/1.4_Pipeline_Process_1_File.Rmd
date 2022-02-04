@@ -1,0 +1,122 @@
+
+```{r}
+rm(list=ls())
+
+library("car")
+library("R.matlab")
+library("alphashape3d")
+
+#pat_dir = "x Export_AFL-12_14_2020-17-16-49"
+
+#setwd(paste0("C:/Users/zxio506/Desktop/Atria_Data/CatheterPath/2020_Melbourne_PointCloud/",pat_dir))
+setwd("C:/Users/zxio506/Desktop/Export_PVI2-11_27_2021-10-07-14")
+```
+
+# Process ".mesh" Files
+```{r}
+f = "1-1-1-RAFlut2.mesh"
+
+txt = readLines(f)
+
+ind1 = grep("VerticesSection",  txt) + 1
+ind2 = grep("TrianglesSection", txt) - 2
+
+txt = txt[ind1:ind2]
+
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+txt = txt[txt!=""]
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+colnames(dat) = strsplit(txt[1]," ")[[1]]
+
+dat = dat[,c("X","Y","Z")]
+
+#scatter3d(x = dat$X, y = dat$X, z = dat$X, point.col = "blue", surface=FALSE)
+
+ashape      = ashape3d(as.matrix(dat), alpha = 3, pert = TRUE)
+ashape_vert = ashape$x
+ashape_tri  = ashape$triang[,c(1:3,9)]
+ashape_tri  = ashape_tri[ashape_tri[,4]>=2,1:3]
+
+# plot
+scatter3d(x = dat$X, y = dat$Y, z = dat$Z, point.col = "blue", surface=FALSE)
+
+# output
+writeMat(paste0("Mesh ",gsub(".mesh","",f),".mat")
+         ,coord      = as.matrix(dat)  # Vertices produced by CARTO Software
+         ,ashape_x   = ashape_vert     # vertices of the concave hull computed
+         ,ashape_tri = ashape_tri      # triangles of concave hull
+)
+```
+
+# Process ".csv" Files
+```{r}
+out_file = "Path LA.csv"
+
+f = list.files()
+f = f[grepl(".xml",f)]
+
+txt = readLines(f)
+
+ind1 = grep('1-LA Point Cloud ZX" Index=',txt)[1]
+#ind1 = grep('-Map" Index=',txt)[1]
+#ind1 = grep('-Map" Index=',txt)[2]
+#ind1 = grep('-ReLA" Index=',txt)[1]
+#ind1 = grep('-SR" Index=',txt)[1]
+#ind1 = grep('-ReSR" Index=',txt)[1]
+#ind1 = grep('-ReRA" Index=',txt)[1]
+#ind1 = grep('-RA" Index=',txt)[1]
+#ind1 = grep('-RA" Index=',txt)[2]
+#ind1 = grep('-ReSRch" Index=',txt)[1]
+#ind1 = grep('-ReSRch" Index=',txt)[2]
+#ind1 = grep('-RAch" Index=',txt)[1]
+#ind1 = grep('-LA 4 ABL" Index=',txt)[1]
+#ind1 = grep('-LA 5 paceCSp300" Index=',txt)[1]
+#ind1 = grep('-NA',txt)[1]
+#ind1 = grep('2-1-ReLA',txt)[1]
+
+ind2 = grep('</Map>',txt[ind1:length(txt)])[1] + ind1
+  
+txt = txt[ind1:ind2]
+
+txt = txt[grepl("CathOrientation",txt)]
+txt = sapply(txt, function(x)
+              substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+names(txt) = NULL
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt," "))), byrow=TRUE, ncol=3))
+
+scatter3d(x = dat$X1, y = dat$X2, z = dat$X3, point.col = "blue", surface=FALSE)
+
+write.csv(dat, file = out_file, row.names = FALSE)
+```
+
+# Process "car.txt"
+```{r}
+f        = "RawPositions.txt"
+out_file = "Path LA.csv"
+
+txt = readLines(f)
+
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+txt = txt[txt!=""]
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+
+dat = dat[,c("X4","X5","X6")]
+
+scatter3d(x = dat$X4, y = dat$X5, z = dat$X6, point.col = "blue", surface=FALSE)
+
+write.csv(dat, file = out_file, row.names = FALSE)
+```
+

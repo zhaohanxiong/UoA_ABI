@@ -1,0 +1,3 @@
+C:\Users\zxio506\Desktop\python35\python converge_weights.py frozen_graph.pb --n_clusters=512
+
+C:\Users\zxio506\Desktop\python35\python converge_weights.py frozen_graph256.pb --n_clusters=256

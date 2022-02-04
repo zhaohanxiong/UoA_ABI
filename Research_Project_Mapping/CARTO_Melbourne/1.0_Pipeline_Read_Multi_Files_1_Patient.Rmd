@@ -1,0 +1,125 @@
+
+```{r}
+library("car")
+library("R.matlab")
+library("alphashape3d")
+
+setwd("C:/Users/Administrator/Desktop/Export_PVI-11_27_2020-16-11-08_PARTIAL")
+```
+
+
+
+# LA Geometry
+```{r}
+f = list.files()
+f = f[grep(".mesh",f)]
+
+for (i in 1:length(f)) {
+  
+  # ----------------------------------------------------------------------------------------------------- CT
+  txt = readLines(f[i])
+
+  ind1 = grep("VerticesSection",  txt) + 1
+  ind2 = grep("TrianglesSection", txt) - 2
+  
+  txt = txt[ind1:ind2]
+  
+  txt = gsub("\\=","",txt)
+  txt = gsub("\\s+"," ",txt)
+  txt = gsub("^\\s+|\\s+$","",txt)
+  
+  txt = txt[txt!=""]
+  
+  dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                          byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+  colnames(dat) = strsplit(txt[1]," ")[[1]]
+
+  dat = dat[,c("X","Y","Z")]
+  
+  #scatter3d(x = dat$X, y = dat$Y, z = dat$Z, point.col = "blue", surface=FALSE)
+  
+  ashape      = ashape3d(as.matrix(dat), alpha = 3, pert = TRUE)
+  ashape_vert = ashape$x
+  ashape_tri  = ashape$triang[,c(1:3,9)]
+  ashape_tri  = ashape_tri[ashape_tri[,4]>=2,1:3]
+  
+  # --------------------------------------------------------------------------------------------------- PATH
+  
+  
+  # ------------------------------------------------------------------------------------------------- OUTPUT
+  writeMat(paste0("Mesh ",gsub(".mesh","",f[i]),".mat")
+           ,coord      = as.matrix(dat)  # Vertices produced (3D point cloud mesh) by CARTO Software
+           ,ashape_x   = ashape_vert     # vertices of the concave hull computed
+           ,ashape_tri = ashape_tri      # triangles of the mesh representing the concave hull
+  )
+
+}
+```
+
+
+
+# Point Clouds
+```{r}
+f = "PVI 11_27_2020 16-11-08.xml"
+
+txt = readLines(f)
+
+ind1_ls = list()
+ind1_ls[[1]] = grep('-LA" Index='    ,txt)[1]
+ind1_ls[[2]] = grep('-Map" Index='   ,txt)[1]
+ind1_ls[[3]] = grep('-ReLA" Index='  ,txt)[1]
+ind1_ls[[4]] = grep('-SR" Index='    ,txt)[1]
+ind1_ls[[5]] = grep('-ReSR" Index='  ,txt)[1]
+ind1_ls[[6]] = grep('-RA" Index='    ,txt)[1]
+ind1_ls[[7]] = grep('-RA" Index='    ,txt)[2]
+ind1_ls[[8]] = grep('-ReSRch" Index=',txt)[1]
+ind1_ls[[9]] = grep('-RAch" Index='  ,txt)[1]
+
+name_ls = c("LA","Map","ReLA","SR","ReSR","RA1","RA2","ReSRch","RAch")
+
+for (i in 1:length(ind1_ls)) {
+  
+  ind1 = ind1_ls[[i]]
+  ind2 = grep('</Map>',txt[ind1:length(txt)])[1] + ind1
+  
+  txt_i = txt[ind1:ind2]
+  
+  txt_i = txt_i[grepl("CathOrientation",txt_i)]
+  txt_i = sapply(txt_i, function(x)
+                substring(x,gregexpr("Position3D=",x)[[1]][1]+12,gregexpr("CathOrientation=",x)[[1]][1]-3))
+  names(txt_i) = NULL
+  txt_i = gsub("\\s+"," ",txt_i)
+  txt_i = gsub("^\\s+|\\s+$","",txt_i)
+  
+  dat = data.frame(matrix(as.numeric(unlist(strsplit(txt_i," "))), byrow=TRUE, ncol=3))
+  
+  #scatter3d(x = dat$X1, y = dat$X2, z = dat$X3, point.col = "blue", surface=FALSE)
+  
+  writeMat(paste0("Path ",name_ls[i],".mat")
+           ,coord      = as.matrix(dat)  # Vertices produced (3D point cloud mesh) by CARTO Software
+  )
+  
+}
+```
+
+
+
+# Ablation Sites
+```{r}
+f = "AdjustedPositions.txt" # Sites.txt RawPositions.txt Grids.txt EndExpiriums.txt AdjustedPositions.txt
+
+txt = readLines(f)
+
+txt = gsub("\\=","",txt)
+txt = gsub("\\s+"," ",txt)
+txt = gsub("^\\s+|\\s+$","",txt)
+
+txt = txt[txt!=""]
+
+dat = data.frame(matrix(as.numeric(unlist(strsplit(txt[2:length(txt)]," "))),
+                        byrow=TRUE, ncol=length(strsplit(txt[2]," ")[[1]])))
+colnames(dat) = strsplit(txt[1]," ")[[1]]
+
+scatter3d(x = dat$X, y = dat$Y, z = dat$Z, point.col = "blue", surface=FALSE)
+```
+
