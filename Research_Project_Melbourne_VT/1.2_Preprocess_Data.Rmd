@@ -1,0 +1,103 @@
+
+# Read All Data
+```{r}
+library("openxlsx")
+library("R.matlab")
+
+setwd("C:/Users/zxio506/Desktop/Data Files for Zhaohan")
+
+files = list.files()
+i = 1:length(files)
+#sort(sample.int(length(files), round(length(files)/4*3)))
+i_train = as.numeric(strsplit("1 3 4 5 6 7 8 10 11 15 17 18 19 21 22 23 24 25 27 29 30 31 32 33 34 35 36 37 38 41 42 43 45 46"," ")[[1]])
+i_test = i[which(!i %in% i_train)]
+
+img_size = 32
+
+files_ls = list()
+
+for (i in 1:length(files)) {
+  
+  print(i)
+  
+  # read in data
+  dat_in = read.xlsx(files[i])
+  
+  # normalize coordinates
+  dat_in$X.Position.Coordinate = dat_in$X.Position.Coordinate - 
+                                    min(dat_in$X.Position.Coordinate) + 1
+  dat_in$X.Position.Coordinate = dat_in$X.Position.Coordinate/max(
+                                    dat_in$X.Position.Coordinate)
+  dat_in$X.Position.Coordinate = round(dat_in$X.Position.Coordinate * img_size)
+  
+  dat_in$Y.Position.Coordinate = dat_in$Y.Position.Coordinate - 
+                                    min(dat_in$Y.Position.Coordinate) + 1
+  dat_in$Y.Position.Coordinate = dat_in$Y.Position.Coordinate/max(
+                                    dat_in$Y.Position.Coordinate)
+  dat_in$Y.Position.Coordinate = round(dat_in$Y.Position.Coordinate * img_size)
+  
+  dat_in$Z.Position.Coordination = dat_in$Z.Position.Coordination - 
+                                    min(dat_in$Z.Position.Coordination) + 1
+  dat_in$Z.Position.Coordination = dat_in$Z.Position.Coordination/max(
+                                    dat_in$Z.Position.Coordination)
+  dat_in$Z.Position.Coordination = round(dat_in$Z.Position.Coordination * img_size)
+  
+  # correct labels
+  dat_in[,c("5.mm.IN")][dat_in[,c("5.mm.IN")] > 1] = 1
+  dat_in[,c("10.mm.IN")][dat_in[,c("10.mm.IN")] > 1] = 1
+  
+  # remove missing/useless info
+  dat_in = dat_in[,colnames(dat_in) != "Point.Index"]
+  #dat_in = dat_in[,colnames(dat_in) != "Alpha.Angular.Coordinate"]
+  #dat_in = dat_in[,colnames(dat_in) != "Beta.Angular.Coordinate"]
+  #dat_in = dat_in[,colnames(dat_in) != "Gamma.Angular.Coordinate"]
+  dat_in = dat_in[,colnames(dat_in) != "Impedance.Value"]
+  dat_in = dat_in[,colnames(dat_in) != "CV.Triad"]
+  dat_in = dat_in[,colnames(dat_in) != "CV.Poly"]
+
+  # normalize remaining columns
+  for (j in 4:(ncol(dat_in) - 2)) {
+    dat_in[,j] = dat_in[,j] - min(dat_in[,j])
+    dat_in[,j] = dat_in[,j]/max(dat_in[,j])
+    dat_in[,j] = abs(dat_in[,j])
+  }
+  
+  # store data into list
+  files_ls[[i]] = dat_in
+  
+  # get image reconstructions
+  c = ncol(dat_in)
+  img1 = array(0, dim = c(img_size,img_size,c-3))
+  img2 = array(0, dim = c(img_size,img_size,c-3))
+  img3 = array(0, dim = c(img_size,img_size,c-3))
+  for (j in 1:nrow(dat_in)) {
+    fm = t(unname(dat_in[j,4:c])[1,])[,1]
+    img1[dat_in$X.Position.Coordinate[j], 
+         dat_in$Y.Position.Coordinate[j],] = fm
+    img2[dat_in$X.Position.Coordinate[j], 
+         dat_in$Z.Position.Coordination[j],] = fm
+    img3[dat_in$Y.Position.Coordinate[j], 
+         dat_in$Z.Position.Coordination[j],] = fm
+  }
+  
+  img1[is.nan(img1)] = 0
+  img2[is.nan(img2)] = 0
+  img3[is.nan(img3)] = 0
+  
+  # save output
+  if (any(i == i_train)) {
+    writeMat(paste0("../VT Data/train_data_",i,".mat"),
+                      img1 = img1, img2 = img2, img3 = img3,
+                      X_train = as.matrix(dat_in[, 1:(c-2)]),
+                      Y_train = as.matrix(dat_in[, (c-1):c]))
+  } else if (any(i == i_test)) {
+    writeMat(paste0("../VT Data/test_data_",i,".mat"),
+                      img1 = img1, img2 = img2, img3 = img3,
+                      X_test = as.matrix(dat_in[, 1:(c-2)]),
+                      Y_test = as.matrix(dat_in[, (c-1):c]))
+  } else {
+    print("ERROR!")
+  }
+
+}
+```

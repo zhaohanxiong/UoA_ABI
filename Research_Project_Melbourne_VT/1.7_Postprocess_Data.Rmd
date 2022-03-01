@@ -1,0 +1,151 @@
+
+# Read All Data
+```{r}
+library("openxlsx")
+library("R.matlab")
+
+setwd("C:/Users/zxio506/Desktop/Data Files for Zhaohan")
+
+# get file list and indices
+files = list.files()
+i = 1:length(files)
+#sort(sample.int(length(files), round(length(files)/4*3)))
+i_train = as.numeric(strsplit("1 3 4 5 6 7 8 10 11 15 17 18 19 21 22 23 24 25 27 29 30 31 32 33 34 35 36 37 38 41 42 43 45 46"," ")[[1]])
+i_test = i[which(!i %in% i_train)]
+
+# map 3D reconstruction indices back to original files
+ii_train = 1:length(i_train) + seq(0,length=length(i_train),by=2)
+ii_test = 1:length(i_test) + seq(0,length=length(i_test),by=2)
+
+count_train = 1
+count_test = 1
+
+# set image size of reconstruction
+img_size = 32
+
+# read in CNN predictions
+train_mat = readMat("../pred_train15.mat")
+test_mat = readMat("../pred15_good.mat")
+
+for (i in 1:length(files)) {
+  
+  print(i)
+  
+  # read in data
+  dat_in = read.xlsx(files[i])
+  
+  # normalize coordinates
+  dat_in$X.Position.Coordinate = dat_in$X.Position.Coordinate - 
+                                    min(dat_in$X.Position.Coordinate) + 1
+  dat_in$X.Position.Coordinate = dat_in$X.Position.Coordinate/max(
+                                    dat_in$X.Position.Coordinate)
+  dat_in$X.Position.Coordinate = round(dat_in$X.Position.Coordinate * img_size)
+  dat_in$X.Position.Coordinate[dat_in$X.Position.Coordinate == 0] = 1
+  
+  dat_in$Y.Position.Coordinate = dat_in$Y.Position.Coordinate - 
+                                    min(dat_in$Y.Position.Coordinate) + 1
+  dat_in$Y.Position.Coordinate = dat_in$Y.Position.Coordinate/max(
+                                    dat_in$Y.Position.Coordinate)
+  dat_in$Y.Position.Coordinate = round(dat_in$Y.Position.Coordinate * img_size)
+  dat_in$Y.Position.Coordinate[dat_in$Y.Position.Coordinate == 0] = 1
+  
+  dat_in$Z.Position.Coordination = dat_in$Z.Position.Coordination - 
+                                    min(dat_in$Z.Position.Coordination) + 1
+  dat_in$Z.Position.Coordination = dat_in$Z.Position.Coordination/max(
+                                    dat_in$Z.Position.Coordination)
+  dat_in$Z.Position.Coordination = round(dat_in$Z.Position.Coordination * img_size)
+  dat_in$Z.Position.Coordination[dat_in$Z.Position.Coordination == 0] = 1
+  
+  # correct labels
+  dat_in[,c("5.mm.IN")][dat_in[,c("5.mm.IN")] > 1] = 1
+  dat_in[,c("10.mm.IN")][dat_in[,c("10.mm.IN")] > 1] = 1
+  
+  # remove missing/useless info
+  dat_in = dat_in[,colnames(dat_in) != "Point.Index"]
+  dat_in = dat_in[,colnames(dat_in) != "Impedance.Value"]
+  dat_in = dat_in[,colnames(dat_in) != "CV.Triad"]
+  dat_in = dat_in[,colnames(dat_in) != "CV.Poly"]
+
+  # normalize remaining columns
+  for (j in 4:(ncol(dat_in) - 2)) {
+    dat_in[,j] = dat_in[,j] - min(dat_in[,j])
+    dat_in[,j] = dat_in[,j]/max(dat_in[,j])
+    dat_in[,j] = abs(dat_in[,j])
+  }
+
+  # set new columns as features
+  dat_in$xy = NA
+  dat_in$xz = NA
+  dat_in$yz = NA
+  #dat_in$xy_5 = NA
+  #dat_in$xz_5 = NA
+  #dat_in$yz_5 = NA
+  
+  # load CNN prediction
+  if (any(i == i_train)) {
+    
+    # load 3 predicted images for each df
+    CNN_img_xy = train_mat$pred[ii_train[count_train]+0,,,2]
+    CNN_img_xz = train_mat$pred[ii_train[count_train]+1,,,2]
+    CNN_img_yz = train_mat$pred[ii_train[count_train]+2,,,2]
+    
+    count_train = count_train + 1
+
+  } else if (any(i == i_test)) {
+
+    # load 3 predicted images for each df
+    CNN_img_xy = test_mat$pred[ii_test[count_test]+0,,,2]
+    CNN_img_xz = test_mat$pred[ii_test[count_test]+1,,,2]
+    CNN_img_yz = test_mat$pred[ii_test[count_test]+2,,,2]
+    
+    count_test = count_test + 1
+    
+  } else {
+    print("ERROR!")
+  }
+
+  # assign pixel values back to data frame using coordinate values
+  for (j in 1:nrow(dat_in)) {
+    
+    dat_in$xy[j] = CNN_img_xy[dat_in$X.Position.Coordinate[j], 
+                              dat_in$Y.Position.Coordinate[j]]
+    dat_in$xz[j] = CNN_img_xz[dat_in$X.Position.Coordinate[j], 
+                              dat_in$Z.Position.Coordination[j]]
+    dat_in$yz[j] = CNN_img_yz[dat_in$Y.Position.Coordinate[j], 
+                              dat_in$Z.Position.Coordination[j]]
+    #x_range_5 = max(1,dat_in$X.Position.Coordinate[j]-10):min(
+    #                          img_size,dat_in$X.Position.Coordinate[j]+10)
+    #y_range_5 = max(1,dat_in$Y.Position.Coordinate[j]-10):min(
+    #                          img_size,dat_in$Y.Position.Coordinate[j]+10)
+    #z_range_5 = max(1,dat_in$Z.Position.Coordination[j]-10):min(
+    #                          img_size,dat_in$Z.Position.Coordination[j]+10)
+    #dat_in$xy_5[j] = sum(CNN_img_xy[x_range_5,y_range_5])
+    #dat_in$xz_5[j] = sum(CNN_img_xz[x_range_5,z_range_5])
+    #dat_in$yz_5[j] = sum(CNN_img_yz[y_range_5,z_range_5])
+    
+  }
+  
+  # normalize x,y,z
+  dat_in$X.Position.Coordinate = dat_in$X.Position.Coordinate/img_size
+  dat_in$Y.Position.Coordinate = dat_in$Y.Position.Coordinate/img_size
+  dat_in$Z.Position.Coordination = dat_in$Z.Position.Coordination/img_size
+  
+  # save output
+  if (any(i == i_train)) {
+
+    write.csv(dat_in,
+              paste0("../VT Data New Feature/train_data_",i,".csv"),
+              row.names = FALSE)
+ 
+  } else if (any(i == i_test)) {
+
+    write.csv(dat_in,
+              paste0("../VT Data New Feature/test_data_",i,".csv"),
+              row.names = FALSE)
+
+  } else {
+    print("ERROR!")
+  }
+
+}
+```
