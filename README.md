@@ -1,7 +1,4 @@
-# UoA_ABI
-Machine Learning &amp; Data Science Work Conducted Auckland Bioengineering Institute (Nov-2016 to Feb-2022)
-
-Projects Lead By Me:
+# Projects Lead By Me:
 
 •	Deep Learning for 2D-4D Medical Image Classification/Localization/Segmentation on the World's Largest Image Datasets
 
