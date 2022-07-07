@@ -32,8 +32,9 @@
 
 •	SVM/KNN Classification of Spatial Signals
 
+
 •	Heuristics-Based Gradient-Driven Non-Convex Stochastic Optimization
 
 ![ECG](https://user-images.githubusercontent.com/29684281/177692165-cdd8e43d-3228-4a3c-8d9c-9d0222fe3365.png)
-
+![MRI](https://user-images.githubusercontent.com/29684281/177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c.png)
 ![mapping](https://user-images.githubusercontent.com/29684281/177692176-b770174c-3432-46c1-a085-2fc8495e8b26.png)
