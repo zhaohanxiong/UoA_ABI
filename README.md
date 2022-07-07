@@ -39,4 +39,4 @@
 
 ![MRI](https://user-images.githubusercontent.com/29684281/177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c.png)
 
-![mapping](https://user-images.githubusercontent.com/29684281/177692176-b770174c-3432-46c1-a085-2fc8495e8b26.png)
+![177692176-b770174c-3432-46c1-a085-2fc8495e8b26](https://user-images.githubusercontent.com/29684281/177692767-eef5cfb4-e53f-406d-aaa9-62e99308f27c.png)
