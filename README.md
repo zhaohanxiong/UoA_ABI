@@ -35,15 +35,16 @@
 •	Heuristics-Based Gradient-Driven Non-Convex Stochastic Optimization
 
 
-
+![Untitled](https://user-images.githubusercontent.com/29684281/177953243-ce2aa807-e5f8-4e35-be15-0ea5d35e8642.png)
+ 
+ 
+ 
 ![ECG](https://user-images.githubusercontent.com/29684281/177692165-cdd8e43d-3228-4a3c-8d9c-9d0222fe3365.png)
-
-
-
+ 
+ 
+ 
 ![MRI](https://user-images.githubusercontent.com/29684281/177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c.png)
-
-
-
+ 
+ 
+ 
 ![177692767-eef5cfb4-e53f-406d-aaa9-62e99308f27c](https://user-images.githubusercontent.com/29684281/177692892-f2ed0473-e564-468c-b2c3-3d6773db98cd.png)
-
-
