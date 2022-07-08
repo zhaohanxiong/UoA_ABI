@@ -1,14 +1,30 @@
-### DataOps Infrastructure
-![Untitled](https://user-images.githubusercontent.com/29684281/177953243-ce2aa807-e5f8-4e35-be15-0ea5d35e8642.png)
+### DataOps Infrastructure (Medical Imaging to Develop AI-Driven Patient-Specific Cardiac Diagnosis)
+![177953243-ce2aa807-e5f8-4e35-be15-0ea5d35e8642](https://user-images.githubusercontent.com/29684281/177954624-98395f7d-a649-46fb-b7af-b79f934c04bd.png)
 
-### ECG Hardware/Software Project Summary
-![ECG](https://user-images.githubusercontent.com/29684281/177692165-cdd8e43d-3228-4a3c-8d9c-9d0222fe3365.png)
+•	Data Acquisition
 
-### MRI Diagnosis Project Summary
-![MRI](https://user-images.githubusercontent.com/29684281/177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c.png)
+•	Data Labelling/Quality Control
 
-### Real-Time Heart Reconstruction Project Summary
-![177692767-eef5cfb4-e53f-406d-aaa9-62e99308f27c](https://user-images.githubusercontent.com/29684281/177692892-f2ed0473-e564-468c-b2c3-3d6773db98cd.png)
+•	Efficient Access/Storage
+
+•	Constant Integration of New Research
+
+•	Continuous Refinement of Data Infrastructure
+
+•	Continuous Deployment of Data Visualizations/Solutions
+
+•	Constant Feedback from Customers to Improve Framework
+
+•	Streamline ML Development
+
+### ECG Hardware/Software Project Summary (Cardiac Disease Detection from ECGs Recorded using Portable Devices)
+![177692165-cdd8e43d-3228-4a3c-8d9c-9d0222fe3365](https://user-images.githubusercontent.com/29684281/177954633-f38ca495-0b69-43a8-bc88-92f156651212.png)
+
+### MRI Diagnosis Project Summary (MRIs to Improve Patient-Specific Cardiac Diagnosis)
+![177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c](https://user-images.githubusercontent.com/29684281/177954649-fd6c462f-5f70-4c2f-b98a-cc18f53842c9.png)
+
+### Real-Time Heart Reconstruction Project Summary (Improve the Accuracy of Cardiac Surgery)
+![177692892-f2ed0473-e564-468c-b2c3-3d6773db98cd](https://user-images.githubusercontent.com/29684281/177954656-9be277d0-56c2-405e-aeb1-0a3d0e0535a1.png)
 
 ### Other Projects Lead By Me:
 
