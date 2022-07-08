@@ -1,5 +1,5 @@
 ### DataOps Infrastructure (Medical Imaging to Develop AI-Driven Patient-Specific Cardiac Diagnosis)
-![Untitled](https://user-images.githubusercontent.com/29684281/177957462-d2af775b-49ea-4ef9-996b-ecf364f649cc.png)
+![Untitled](https://user-images.githubusercontent.com/29684281/177958117-b7b677f8-41f0-40af-beac-80d3f41e5fbb.png)
 
 •	Data Acquisition
 
