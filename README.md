@@ -19,12 +19,13 @@
 
 ### ECG Hardware/Software Project Summary (Cardiac Disease Detection from ECGs Recorded using Portable Devices)
 ![177692165-cdd8e43d-3228-4a3c-8d9c-9d0222fe3365](https://user-images.githubusercontent.com/29684281/177954633-f38ca495-0b69-43a8-bc88-92f156651212.png)
+![image](https://user-images.githubusercontent.com/29684281/183222150-e08ef1c4-9f35-4ae0-b15e-be2c193fd7cd.png)
 
 ### MRI Diagnosis Project Summary (MRIs to Improve Patient-Specific Cardiac Diagnosis)
-![177692548-36d8e68d-fa8d-4297-862f-d038a76f5c2c](https://user-images.githubusercontent.com/29684281/177954649-fd6c462f-5f70-4c2f-b98a-cc18f53842c9.png)
+![image](https://user-images.githubusercontent.com/29684281/183222186-d74d1915-ce4b-49b6-91bc-e7db09ba0599.png)
 
 ### Real-Time Heart Reconstruction Project Summary (Improve the Accuracy of Cardiac Surgery)
-![177692892-f2ed0473-e564-468c-b2c3-3d6773db98cd](https://user-images.githubusercontent.com/29684281/177954656-9be277d0-56c2-405e-aeb1-0a3d0e0535a1.png)
+![image](https://user-images.githubusercontent.com/29684281/183222263-2e8aedc3-4a9d-4fb2-a95e-094cffd8cf98.png)
 
 ### Other Projects Lead By Me:
 
