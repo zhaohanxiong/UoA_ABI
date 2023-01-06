@@ -22,7 +22,7 @@
 ![image](https://user-images.githubusercontent.com/29684281/183222150-e08ef1c4-9f35-4ae0-b15e-be2c193fd7cd.png)
 
 ### MRI Diagnosis Project Summary (MRIs to Improve Patient-Specific Cardiac Diagnosis)
-![image](https://user-images.githubusercontent.com/29684281/183222186-d74d1915-ce4b-49b6-91bc-e7db09ba0599.png)
+![image](https://user-images.githubusercontent.com/29684281/211007312-db9ce387-89ca-4f88-be0e-0d34d67e50cd.png)
 
 ### Real-Time Heart Reconstruction Project Summary (Improve the Accuracy of Cardiac Surgery)
 ![image](https://user-images.githubusercontent.com/29684281/183222263-2e8aedc3-4a9d-4fb2-a95e-094cffd8cf98.png)
